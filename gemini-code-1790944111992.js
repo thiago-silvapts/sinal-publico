@@ -1,1 +1,0 @@
-console.log("Protótipo carregado com sucesso!");
