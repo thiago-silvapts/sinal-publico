@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0d6efd">
-  <title>Sinal Público - App Móvel v9</title>
+  <title>Sinal Público - App Móvel v10</title>
   <style>
     :root {
       --primary: #0d6efd;
@@ -23,7 +23,6 @@
       --radius: 16px;
     }
 
-    /* ITEM AJUSTE DE MODO ESCURO: COR AZUL VIBRANTE AO INVÉS DE AMARELO */
     body.dark-mode {
       --bg: #0f172a;
       --card-bg: #1e293b;
@@ -74,7 +73,6 @@
       position: relative;
     }
 
-    /* PUSH TOAST */
     .push-notification-toast {
       position: absolute;
       top: 12px;
@@ -218,6 +216,7 @@
     .btn-success { background: var(--success); color: white; }
     .btn-warning { background: var(--warning); color: #000; }
     .btn-outline { border: 1px solid var(--primary); color: var(--primary); background: transparent; }
+    .btn-secondary { background: var(--secondary); color: white; }
     .btn-sm { padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; width: auto; }
 
     .nav-tabs {
@@ -352,7 +351,7 @@
 <body>
 
   <div class="mobile-frame">
-    <!-- PUSH TOAST NOTIFICATION (ITEM 2) -->
+    <!-- PUSH TOAST NOTIFICATION -->
     <div id="push-toast" class="push-notification-toast" aria-live="polite">
       <div class="push-icon">🤟</div>
       <div>
@@ -361,7 +360,7 @@
       </div>
     </div>
 
-    <!-- HEADER MÓVEL (ITEM 10, 38) -->
+    <!-- HEADER MÓVEL -->
     <header>
       <div class="logo-area">
         <button id="btn-back" class="btn-icon" onclick="goBack()" style="display:none;" aria-label="Voltar para a tela anterior">← Voltar</button>
@@ -369,21 +368,21 @@
         <span class="app-title">Sinal Público</span>
       </div>
       <div class="header-btns">
-        <button class="btn-icon" onclick="toggleDarkMode()" aria-label="Alternar modo escuro com azul">🌙</button>
+        <button class="btn-icon" onclick="toggleDarkMode()" aria-label="Alternar modo escuro">🌙</button>
         <button class="btn-icon" onclick="adjustFont(0.1)" aria-label="Aumentar texto">A+</button>
         <button class="btn-icon" onclick="adjustFont(-0.1)" aria-label="Diminuir texto">A-</button>
       </div>
     </header>
 
     <main>
-      <!-- TELA 1: AUTENTICAÇÃO E CADASTRO (ITEMS 4, 5, 7, 8, 44, 53) -->
+      <!-- TELA 1: AUTENTICAÇÃO E CADASTRO -->
       <section id="screen-auth" class="screen active">
-        <div class="nav-tabs">
-          <div class="nav-tab active" onclick="switchAuthTab('login')">Entrar</div>
-          <div class="nav-tab" onclick="switchAuthTab('register')">Cadastrar</div>
+        <div class="nav-tabs" role="tablist">
+          <div class="nav-tab active" role="tab" tabindex="0" onclick="switchAuthTab('login')">Entrar</div>
+          <div class="nav-tab" role="tab" tabindex="0" onclick="switchAuthTab('register')">Cadastrar</div>
         </div>
 
-        <!-- FORM LOGIN COM CELULAR/EMAIL E SENHA (ITEMS 4, 7, 53) -->
+        <!-- FORM LOGIN -->
         <form id="form-login" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="login-identifier">Celular ou E-mail</label>
@@ -396,7 +395,7 @@
 
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.8rem;">
             <label style="display: flex; align-items: center; gap: 4px; font-weight: normal;">
-              <input type="checkbox" id="remember-me" checked> Manter conectado (ITEM 53)
+              <input type="checkbox" id="remember-me" checked> Manter conectado
             </label>
             <a href="#" onclick="alert('Instruções de recuperação enviadas por e-mail/SMS!'); return false;" style="color: var(--primary);">Esqueceu a senha?</a>
           </div>
@@ -408,7 +407,7 @@
           </button>
         </form>
 
-        <!-- FORM CADASTRO COM CEP VIA CEP, VALIDAÇÃO CPF/CNPJ E LGPD (ITEMS 7, 8, 44) -->
+        <!-- FORM CADASTRO -->
         <form id="form-register" onsubmit="handleRegister(event)" style="display: none;">
           <div class="form-group">
             <label for="reg-role">Perfil do Usuário</label>
@@ -416,7 +415,7 @@
               <option value="surdo">🤟 Pessoa Surda</option>
               <option value="comerciante">🏪 Comerciante / Estabelecimento</option>
               <option value="interprete">💬 Intérprete de Libras</option>
-              <option value="orgao_publico">🏛️ Órgão Público / Prefeitura (ITEM 90)</option>
+              <option value="orgao_publico">🏛️ Órgão Público / Prefeitura</option>
             </select>
           </div>
 
@@ -425,8 +424,15 @@
             <input type="text" id="reg-name" class="form-control" placeholder="Seu nome" required>
           </div>
 
+          <div id="org-extra-fields" style="display: none;">
+            <div class="form-group">
+              <label for="reg-org-name">Razão Social / Nome da Instituição</label>
+              <input type="text" id="reg-org-name" class="form-control" placeholder="Nome da empresa ou órgão">
+            </div>
+          </div>
+
           <div class="form-group">
-            <label for="reg-cpf">CPF ou CNPJ (Validação ITEM 7)</label>
+            <label for="reg-cpf">CPF ou CNPJ</label>
             <input type="text" id="reg-cpf" class="form-control" placeholder="000.000.000-00" oninput="maskCPF(this)" required>
           </div>
 
@@ -440,10 +446,9 @@
             <input type="tel" id="reg-phone" class="form-control" placeholder="(83) 99999-9999" maxlength="15" oninput="maskPhone(this)" required>
           </div>
 
-          <!-- BUSCA AUTOMÁTICA DE CEP (ITEM 8 VIA CEP) -->
           <div style="display: flex; gap: 8px;">
             <div class="form-group" style="flex: 1;">
-              <label for="reg-cep">CEP (ITEM 8)</label>
+              <label for="reg-cep">CEP</label>
               <input type="text" id="reg-cep" class="form-control" placeholder="58700-000" maxlength="9" onblur="fetchCEP(this.value)">
             </div>
             <div class="form-group" style="flex: 1;">
@@ -453,7 +458,7 @@
           </div>
 
           <div class="form-group">
-            <label for="reg-city">Cidade (Bairro)</label>
+            <label for="reg-city">Cidade / Bairro</label>
             <input type="text" id="reg-city" class="form-control" placeholder="Patos" readonly>
           </div>
 
@@ -462,11 +467,10 @@
             <input type="password" id="reg-password" class="form-control" placeholder="Mínimo 6 caracteres" minlength="6" required>
           </div>
 
-          <!-- COMPLIANCE LGPD (ITEM 44) -->
           <div class="form-group" style="font-size: 0.78rem;">
             <label style="display: flex; align-items: flex-start; gap: 6px; font-weight: normal;">
               <input type="checkbox" id="lgpd-consent" required>
-              <span>Concordo com os Termos de Uso e Política de Privacidade em conformidade com a LGPD. (ITEM 44)</span>
+              <span>Concordo com os Termos de Uso e Política de Privacidade em conformidade com a LGPD.</span>
             </label>
           </div>
 
@@ -474,7 +478,7 @@
         </form>
       </section>
 
-      <!-- TELA 2FA: VERIFICAÇÃO EM DUAS ETAPAS (ITEM 5) -->
+      <!-- TELA 2FA -->
       <section id="screen-2fa" class="screen">
         <div class="card" style="text-align: center;">
           <h3>Autenticação Multifator (2FA)</h3>
@@ -486,40 +490,36 @@
         </div>
       </section>
 
-      <!-- TELA 2: DASHBOARD SURDO / COMERCIANTE / ÓRGÃO PÚBLICO (ITEMS 3, 13, 19, 33, 52, 90) -->
+      <!-- TELA 2: DASHBOARD USUÁRIO -->
       <section id="screen-dashboard-user" class="screen">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <div>
             <span id="user-role-badge" class="status-badge status-online">🤟 Pessoa Surda</span>
             <h3 id="welcome-user-name">Olá!</h3>
           </div>
-          <!-- INDICADOR DE STATUS DO INTÉRPRETE MAIS PRÓXIMO (ITEM 3, 33) -->
           <div style="text-align: right; font-size: 0.72rem;">
             <div>Intérprete PB: <span class="status-badge status-online">● Online</span></div>
             <div style="color: var(--secondary); margin-top:2px;">Filtro Regional: Ativo</div>
           </div>
         </div>
 
-        <!-- BOTÃO DE PÂNICO / EMERGÊNCIA DEDICADO (ITEM 19) -->
         <button class="btn btn-danger" style="padding: 14px; margin-bottom: 12px; font-size: 1rem; box-shadow: 0 4px 12px rgba(220,53,69,0.3);" onclick="startEmergencyQueue()">
           🚨 EMERGÊNCIA INSTANTÂNEA LIBRAS
         </button>
 
         <div class="card" style="border-left: 4px solid var(--primary);">
-          <h4>📅 Agendamento de Intérprete (ITEM 13, 15)</h4>
+          <h4>📅 Agendamento de Intérprete</h4>
           <p style="font-size: 0.78rem; color: var(--secondary); margin: 4px 0 10px 0;">Programe um atendimento com antecedência com confirmação por lembrete.</p>
           <button class="btn btn-outline btn-sm" onclick="showScreen('screen-agendar')">Novo Agendamento</button>
         </div>
 
-        <!-- TESTE DE CÂMERA E ÁUDIO PRÉ-CHAMADA (ITEM 79, 80) -->
         <div class="card">
-          <h4>🎙️ Teste de Câmera e Microfone (ITEM 79, 80)</h4>
+          <h4>🎙️ Teste de Câmera e Microfone</h4>
           <p style="font-size: 0.78rem; color: var(--secondary); margin-bottom: 8px;">Verifique seus dispositivos antes de entrar em uma chamada.</p>
           <button class="btn btn-outline btn-sm" onclick="testMediaDevices()">Iniciar Teste Técnico</button>
           <div class="mic-meter-bar" id="mic-bar" style="display:none;"><div class="mic-meter-fill" id="mic-fill"></div></div>
         </div>
 
-        <!-- ASSISTENTE BOT INTERATIVO (ITEM 52) -->
         <div class="card" style="background: var(--light);">
           <div style="display: flex; gap: 8px; align-items: center;">
             <span style="font-size: 1.4rem;">🤖</span>
@@ -532,7 +532,7 @@
         </div>
       </section>
 
-      <!-- TELA FILA DE ESPERA INTELIGENTE (ITEM 6) -->
+      <!-- TELA FILA DE ESPERA -->
       <section id="screen-queue" class="screen">
         <div class="card" style="text-align: center; padding: 20px;">
           <h3>🚨 Conectando ao Intérprete...</h3>
@@ -545,14 +545,13 @@
         </div>
       </section>
 
-      <!-- TELA 3: DASHBOARD INTÉRPRETE (ITEMS 3, 61, 89) -->
+      <!-- TELA 3: DASHBOARD INTÉRPRETE -->
       <section id="screen-dashboard-interprete" class="screen">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <div>
             <span class="status-badge status-online">💬 Intérprete Autorizado</span>
             <h3 id="welcome-interprete-name">Painel</h3>
           </div>
-          <!-- BADGES E CONQUISTAS (ITEM 89) -->
           <div style="text-align: right;">
             <span style="font-size: 0.75rem; background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-weight: bold;">
               🏆 Top 50 Atendimentos
@@ -560,10 +559,9 @@
           </div>
         </div>
 
-        <!-- CONTROLE DE DISPONIBILIDADE (ITEM 61) -->
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong style="font-size: 0.85rem;">Status de Disponibilidade (ITEM 61)</strong>
+            <strong style="font-size: 0.85rem;">Status de Disponibilidade</strong>
             <select class="form-control" style="width: auto; padding: 4px 8px; font-size: 0.8rem;" onchange="changeInterpreteStatus(this.value)">
               <option value="online">● Disponível (Online)</option>
               <option value="busy">🔴 Em Atendimento</option>
@@ -572,7 +570,6 @@
           </div>
         </div>
 
-        <!-- FILA DE CHAMADOS AGUARDANDO -->
         <div class="card">
           <h4>Fila de Chamados Regionais (PB)</h4>
           <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
@@ -587,17 +584,16 @@
         </div>
       </section>
 
-      <!-- TELA 4: VIDEOCHAMADA WEBRTC COMPLETA (ITEMS 1, 9, 10, 11, 23, 26, 27, 28, 29, 63, 97, 98) -->
+      <!-- TELA 4: VIDEOCHAMADA WEBRTC -->
       <section id="screen-call" class="screen">
         <div class="card" style="padding: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span class="status-badge status-online">● WebRTC Conectado (ITEM 1)</span>
+            <span class="status-badge status-online">● WebRTC Conectado</span>
+            <span id="call-timer" style="font-size: 0.8rem; font-weight: bold;">00:00</span>
             <button class="btn btn-danger btn-sm" onclick="endCall()">Encerrar</button>
           </div>
 
-          <!-- TELA DE VÍDEO PRINCIPAL -->
           <div class="video-container" id="video-box">
-            <!-- MÉTRICAS DE REDE E CONEXÃO (ITEM 11) -->
             <div class="call-metrics">
               <span id="call-ping">Ping: 24ms</span> | <span id="call-res">720p HD</span>
             </div>
@@ -605,7 +601,6 @@
             <span style="font-size: 0.9rem;">[Vídeo WebRTC Criptografado]</span>
             <div id="reaction-overlay"></div>
 
-            <!-- OPÇÕES DE CONTROLE DE VÍDEO E RESOLUÇÃO (ITEMS 23, 26) -->
             <div style="position: absolute; bottom: 8px; right: 8px; display: flex; gap: 4px;">
               <button class="btn btn-sm btn-secondary" onclick="togglePinVideo()" style="font-size: 0.7rem;">📌 Fixar Tela</button>
               <select style="font-size: 0.7rem; background: rgba(0,0,0,0.7); color:#fff; border:none; border-radius:4px; padding:2px;" onchange="changeResolution(this.value)">
@@ -616,19 +611,17 @@
             </div>
           </div>
 
-          <!-- REAÇÕES VISUAIS RÁPIDAS SOBRE O VÍDEO (ITEM 29) -->
           <div style="display: flex; gap: 4px; justify-content: center; margin-bottom: 8px;">
             <button class="btn btn-outline btn-sm" onclick="sendReaction('👍')">👍</button>
             <button class="btn btn-outline btn-sm" onclick="sendReaction('✋')">✋</button>
             <button class="btn btn-outline btn-sm" onclick="sendReaction('❓')">❓</button>
             <button class="btn btn-outline btn-sm" onclick="sendReaction('👏')">👏</button>
-            <button class="btn btn-outline btn-sm" onclick="switchCamera()">🔄 Câmera (ITEM 27)</button>
-            <button class="btn btn-outline btn-sm" onclick="toggleMic()">🎙️ Mic (ITEM 28)</button>
+            <button class="btn btn-outline btn-sm" onclick="switchCamera()">🔄 Câmera</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleMic()">🎙️ Mic</button>
           </div>
 
-          <!-- CHAT DE TEXTO SIMULTÂNEO (ITEM 9) -->
           <div>
-            <div style="font-size: 0.75rem; font-weight: bold; margin-bottom: 2px;">Chat em Texto Simultâneo (ITEM 9)</div>
+            <div style="font-size: 0.75rem; font-weight: bold; margin-bottom: 2px;">Chat em Texto Simultâneo</div>
             <div class="chat-box" id="call-chat-box">
               <div class="chat-msg them">Atendimento iniciado. Como posso ajudar?</div>
             </div>
@@ -640,15 +633,14 @@
         </div>
       </section>
 
-      <!-- TELA PÓS-CHAMADA: AVALIAÇÃO, NOTAS E DENÚNCIA (ITEMS 17, 18, 66) -->
+      <!-- TELA PÓS-CHAMADA -->
       <section id="screen-feedback" class="screen">
         <div class="card">
           <h3>Atendimento Concluído</h3>
           <p style="font-size: 0.8rem; color: var(--secondary); margin-bottom: 10px;">Como foi sua experiência durante a chamada?</p>
 
-          <!-- AVALIAÇÃO POR ESTRELAS (ITEM 17) -->
           <div class="form-group" style="text-align: center;">
-            <label>Avaliação (ITEM 17)</label>
+            <label>Avaliação</label>
             <div style="font-size: 1.8rem; color: #ffc107; cursor: pointer;">
               <span onclick="setRating(1)">★</span>
               <span onclick="setRating(2)">★</span>
@@ -663,9 +655,8 @@
             <textarea id="feedback-comments" class="form-control" rows="2" placeholder="Escreva seu feedback..."></textarea>
           </div>
 
-          <!-- NOTAS INTERNAS DO INTÉRPRETE (ITEM 66) -->
           <div id="interprete-notes-area" class="form-group" style="display:none;">
-            <label for="interprete-notes">Notas Internas Privadas do Intérprete (ITEM 66)</label>
+            <label for="interprete-notes">Notas Internas Privadas do Intérprete</label>
             <textarea id="interprete-notes" class="form-control" rows="2" placeholder="Notas sobre o atendimento para registro técnico..."></textarea>
           </div>
 
@@ -673,14 +664,13 @@
 
           <hr style="margin: 12px 0; border:0; border-top: 1px solid var(--border-color);">
 
-          <!-- MECANISMO DE DENÚNCIA / MÁ CONDUTA (ITEM 18) -->
           <button class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger); width: 100%;" onclick="reportAbuse()">
-            ⚠️ Reportar Problema ou Mau Uso (ITEM 18)
+            ⚠️ Reportar Problema ou Mau Uso
           </button>
         </div>
       </section>
 
-      <!-- TELA MINHA CONTA & DADOS PESSOAIS (ITEMS 30, 43, 46, 56, 57) -->
+      <!-- TELA MINHA CONTA -->
       <section id="screen-profile" class="screen">
         <div class="card">
           <h3>Meus Dados Pessoais</h3>
@@ -691,15 +681,13 @@
               <input type="text" id="edit-name" class="form-control" required>
             </div>
 
-            <!-- NOME SOCIAL (ITEM 56) -->
             <div class="form-group">
-              <label for="edit-social-name">Nome Social (ITEM 56)</label>
+              <label for="edit-social-name">Nome Social</label>
               <input type="text" id="edit-social-name" class="form-control" placeholder="Como prefere ser chamado(a)">
             </div>
 
-            <!-- OBSERVAÇÕES MÉDICAS E EMERGÊNCIA (ITEM 57) -->
             <div class="form-group">
-              <label for="edit-medical-info">Observações Médicas / Alergias / Contato de Emergência (ITEM 57)</label>
+              <label for="edit-medical-info">Observações Médicas / Alergias / Contato de Emergência</label>
               <textarea id="edit-medical-info" class="form-control" rows="2" placeholder="Ex: Tipo O+, Alérgico a Penicilina. Contato: Mãe (83) 98888-7777"></textarea>
             </div>
 
@@ -707,9 +695,8 @@
           </form>
         </div>
 
-        <!-- HISTÓRICO COMPLETO DE ATENDIMENTOS (ITEM 30) -->
         <div class="card">
-          <h4>Histórico de Atendimentos (ITEM 30)</h4>
+          <h4>Histórico de Atendimentos</h4>
           <div id="history-list" style="font-size: 0.8rem; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
             <div style="padding: 6px; background: var(--light); border-radius: 6px;">
               <strong>🏥 Emergência Saúde - 12 Minutos</strong>
@@ -718,13 +705,12 @@
           </div>
         </div>
 
-        <!-- EXCLUSÃO DEFINITIVA LGPD (ITEM 46) -->
         <div class="card">
-          <button class="btn btn-danger" onclick="deleteAccountPermanent()">Excluir conta e apagar dados permanentemente (ITEM 46)</button>
+          <button class="btn btn-danger" onclick="deleteAccountPermanent()">Excluir conta e apagar dados permanentemente</button>
         </div>
       </section>
 
-      <!-- AGENDAMENTO TELA -->
+      <!-- TELA AGENDAMENTO -->
       <section id="screen-agendar" class="screen">
         <div class="card">
           <h3>Agendar Atendimento</h3>
@@ -765,17 +751,17 @@
   </div>
 
   <script>
-    // ESTADO GLOBAL DA APLICAÇÃO
     const state = {
       currentUser: null,
       history: ['screen-auth'],
       fontScale: 1.0,
       micStream: null,
       micInterval: null,
-      callRating: 5
+      callRating: 5,
+      callSeconds: 0,
+      callTimerInterval: null
     };
 
-    // ITEM AJUSTE DE MODO ESCURO COM COR AZUL
     function toggleDarkMode() {
       document.body.classList.toggle('dark-mode');
       triggerVibration(50);
@@ -786,21 +772,17 @@
       document.documentElement.style.setProperty('--font-scale', state.fontScale);
     }
 
-    // ITEM 39: FEEDBACK TÁTIL / VIBRAÇÃO
     function triggerVibration(pattern = 100) {
       if (navigator.vibrate) {
         navigator.vibrate(pattern);
       }
     }
 
-    // ITEM 2: NOTIFICAÇÃO PUSH
     function triggerPushNotification(title, body) {
       const toast = document.getElementById('push-toast');
       document.getElementById('push-title').innerText = title;
       document.getElementById('push-body').innerText = body;
       toast.classList.add('show');
-      
-      // VIBRAÇÃO PUSH (ITEM 97)
       triggerVibration([120, 60, 120]);
 
       setTimeout(() => {
@@ -808,7 +790,16 @@
       }, 4000);
     }
 
-    // ITEM 7: VALIDAÇÃO DE CPF/CNPJ
+    function toggleOrgFields() {
+      const role = document.getElementById('reg-role').value;
+      const extra = document.getElementById('org-extra-fields');
+      if (role === 'comerciante' || role === 'orgao_publico') {
+        extra.style.display = 'block';
+      } else {
+        extra.style.display = 'none';
+      }
+    }
+
     function maskCPF(i) {
       let v = i.value.replace(/\D/g, "");
       if (v.length <= 11) {
@@ -831,7 +822,6 @@
       i.value = v;
     }
 
-    // ITEM 8: BUSCA VIA CEP REAL
     async function fetchCEP(cep) {
       const cleanCEP = cep.replace(/\D/g, "");
       if (cleanCEP.length === 8) {
@@ -840,17 +830,17 @@
           const data = await res.json();
           if (!data.erro) {
             document.getElementById('reg-uf').value = data.uf;
-            document.getElementById('reg-city').value = `${data.localidade} (${data.bairro})`;
+            document.getElementById('reg-city').value = `${data.localidade} (${data.bairro || 'Centro'})`;
             triggerPushNotification('CEP Encontrado', `${data.localidade} - ${data.uf}`);
+          } else {
+            alert('CEP não encontrado. Por favor, verifique o número digitado.');
           }
         } catch (e) {
-          document.getElementById('reg-uf').value = 'PB';
-          document.getElementById('reg-city').value = 'Patos';
+          triggerPushNotification('Aviso CEP', 'Consulta de CEP offline.');
         }
       }
     }
 
-    // ITEM 10: NAVEGAÇÃO E HISTÓRICO ISOLADO
     function showScreen(screenId, pushToHistory = true) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       const target = document.getElementById(screenId);
@@ -873,7 +863,7 @@
         btnBack.style.display = (state.history.length > 1 && !isBase) ? 'inline-block' : 'none';
       } else {
         footer.style.display = 'none';
-        btnBack.style.display = 'none';
+        btnBack.style.display = (state.history.length > 1 && screenId !== 'screen-auth') ? 'inline-block' : 'none';
       }
     }
 
@@ -882,18 +872,21 @@
         state.history.pop();
         const prev = state.history[state.history.length - 1];
         showScreen(prev, false);
+      } else {
+        navigateToDashboard();
       }
     }
 
     function navigateToDashboard() {
       if (state.currentUser && state.currentUser.role === 'interprete') {
         showScreen('screen-dashboard-interprete');
-      } else {
+      } else if (state.currentUser) {
         showScreen('screen-dashboard-user');
+      } else {
+        showScreen('screen-auth');
       }
     }
 
-    // ABA AUTENTICAÇÃO
     function switchAuthTab(tab) {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       if (tab === 'login') {
@@ -907,10 +900,8 @@
       }
     }
 
-    // ITEM 4, 5: LOGIN & 2FA
     function handleLogin(e) {
       e.preventDefault();
-      // Redireciona para verificação 2FA (ITEM 5)
       showScreen('screen-2fa');
       triggerPushNotification('Código 2FA', 'Seu código de teste é 123456');
     }
@@ -930,7 +921,6 @@
       }
     }
 
-    // ITEM 53: SIMULAÇÃO BIOMETRIA
     function simulateBiometrics() {
       triggerVibration(100);
       alert('Biometria / FaceID reconhecido com sucesso!');
@@ -971,7 +961,6 @@
       showScreen('screen-auth', false);
     }
 
-    // ITEM 6: FILA DE ESPERA INTELIGENTE & EMERGÊNCIA (ITEM 19)
     function startEmergencyQueue() {
       triggerVibration([200, 100, 200]);
       showScreen('screen-queue');
@@ -995,17 +984,24 @@
       connectCall();
     }
 
-    // ITEM 1, 63, 97, 98: CONEXÃO WEBRTC
     function connectCall() {
       showScreen('screen-call');
-      // NOTIFICAÇÃO DE ENTRADA DO INTÉRPRETE (ITEM 63)
       triggerPushNotification('Atendimento Iniciado', 'Intérprete conectado à videochamada.');
-      // SINALIZAÇÃO SONORA/TÁTIL (ITEM 97)
       triggerVibration([100, 50, 100]);
+
+      state.callSeconds = 0;
+      clearInterval(state.callTimerInterval);
+      state.callTimerInterval = setInterval(() => {
+        state.callSeconds++;
+        const m = String(Math.floor(state.callSeconds / 60)).padStart(2, '0');
+        const s = String(state.callSeconds % 60).padStart(2, '0');
+        const timerEl = document.getElementById('call-timer');
+        if (timerEl) timerEl.innerText = `${m}:${s}`;
+      }, 1000);
     }
 
     function endCall() {
-      // SINALIZAÇÃO SONORA/TÁTIL TÉRMINO (ITEM 97)
+      clearInterval(state.callTimerInterval);
       triggerVibration(200);
       if (state.currentUser && state.currentUser.role === 'interprete') {
         document.getElementById('interprete-notes-area').style.display = 'block';
@@ -1015,7 +1011,6 @@
       showScreen('screen-feedback');
     }
 
-    // ITEM 29: REAÇÕES VISUAIS EM OVERLAY
     function sendReaction(emoji) {
       const overlay = document.getElementById('reaction-overlay');
       const el = document.createElement('div');
@@ -1026,30 +1021,25 @@
       triggerVibration(40);
     }
 
-    // ITEM 27: TROCAR CÂMERA
     function switchCamera() {
       triggerPushNotification('Câmera Alternada', 'Invertido entre câmera frontal e traseira.');
     }
 
-    // ITEM 28: DESLIGAR/LIGAR MIC
     function toggleMic() {
       triggerPushNotification('Microfone', 'Status do microfone alterado.');
     }
 
-    // ITEM 26: FIXAR VÍDEO
     function togglePinVideo() {
       const box = document.getElementById('video-box');
       box.classList.toggle('pinned');
       triggerPushNotification('Modo de Vídeo', 'Fixação de tela alterada.');
     }
 
-    // ITEM 23: RESOLUÇÃO
     function changeResolution(res) {
       document.getElementById('call-res').innerText = res;
       triggerPushNotification('Qualidade de Vídeo', `Resolução alterada para ${res}`);
     }
 
-    // ITEM 9: CHAT EM TEXTO SIMULTÂNEO
     function sendChatMessage(e) {
       e.preventDefault();
       const input = document.getElementById('chat-input');
@@ -1064,7 +1054,6 @@
       }
     }
 
-    // ITEM 79, 80: TESTE DE DISPOSITIVOS E MEDIDOR DE MIC
     function testMediaDevices() {
       const bar = document.getElementById('mic-bar');
       const fill = document.getElementById('mic-fill');
@@ -1081,7 +1070,6 @@
       }, 2000);
     }
 
-    // ITEM 17, 18: AVALIAÇÃO E DENÚNCIA
     function setRating(r) {
       state.callRating = r;
       triggerVibration(50);
@@ -1099,12 +1087,10 @@
       }
     }
 
-    // ITEM 52: CHATBOT INTERATIVO
     function openChatbot() {
       alert('Assistente Virtual: Como agendar? Clique em "Novo Agendamento". Para emergências, toque no botão vermelho no topo!');
     }
 
-    // ITEM 56, 57: PERFIL E DADOS MÉDICOS
     function populateProfile() {
       if (!state.currentUser) return;
       document.getElementById('edit-name').value = state.currentUser.name || '';
@@ -1118,7 +1104,6 @@
       triggerPushNotification('Perfil Atualizado', 'Seus dados foram salvos.');
     }
 
-    // ITEM 46: EXCLUSÃO PERMANENTE DE DADOS
     function deleteAccountPermanent() {
       if (confirm('Tem certeza? Todos os seus dados pessoais, histórico e conta serão excluídos imediatamente.')) {
         localStorage.clear();
