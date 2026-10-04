@@ -1,14 +1,20 @@
-// Sinal Público v12 - Módulo WebRTC P2P e Adaptação de Mídia
+// Sinal Público v12 - Módulo WebRTC P2P e Sinalização Firebase
 (function() {
   const firebaseConfig = {
-    databaseURL: "https://sinal-publico-default-rtdb.firebaseio.com" // Servidor público de teste/sinalização
+    databaseURL: "https://sinal-publico-default-rtdb.firebaseio.com"
   };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const database = firebase.database();
 
   let localStream = null;
   let peerConnection = null;
   let currentFacingMode = 'user';
   let isAudioMuted = false;
   let isVideoDisabled = false;
+  let roomRef = null;
 
   const rtcConfig = {
     iceServers: [
@@ -17,13 +23,10 @@
     ]
   };
 
-  // Cálculo de Qualidade com base na Conexão e Dispositivo
   function getAdaptiveVideoConstraints() {
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
     const effectiveType = connection.effectiveType || '4g';
     const hardwareConcurrency = navigator.hardwareConcurrency || 4;
-
-    console.log(`Detectado: Conexão ${effectiveType}, Cores CPU: ${hardwareConcurrency}`);
 
     let width = { ideal: 1280 };
     let height = { ideal: 720 };
@@ -39,7 +42,6 @@
       frameRate = { ideal: 24 };
     }
 
-    // Atualiza o indicador de métricas na tela
     const metricsEl = document.getElementById('network-metrics');
     if (metricsEl) {
       metricsEl.innerText = `● ${effectiveType.toUpperCase()} | ${frameRate.ideal} FPS | ${height.ideal}p`;
@@ -55,6 +57,8 @@
 
   async function initCall(roomCode, isHost) {
     try {
+      roomRef = database.ref(`rooms/${roomCode}`);
+
       const constraints = {
         video: getAdaptiveVideoConstraints(),
         audio: true
@@ -75,6 +79,53 @@
           remoteVideo.srcObject = event.streams[0];
         }
       };
+
+      // Gerenciamento de ICE Candidates
+      const candidatesRef = isHost ? roomRef.child('hostCandidates') : roomRef.child('guestCandidates');
+      const remoteCandidatesRef = isHost ? roomRef.child('guestCandidates') : roomRef.child('hostCandidates');
+
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          candidatesRef.push(event.candidate.toJSON());
+        }
+      };
+
+      remoteCandidatesRef.on('child_added', (snapshot) => {
+        const candidate = new RTCIceCandidate(snapshot.val());
+        peerConnection.addIceCandidate(candidate);
+      });
+
+      if (isHost) {
+        // Criar Oferta
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        await roomRef.child('offer').set({
+          type: offer.type,
+          sdp: offer.sdp
+        });
+
+        // Ouvir Resposta do Convidado
+        roomRef.child('answer').on('value', async (snapshot) => {
+          const answer = snapshot.val();
+          if (answer && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+          }
+        });
+      } else {
+        // Obter Oferta do Host e Enviar Resposta
+        roomRef.child('offer').once('value', async (snapshot) => {
+          const offer = snapshot.val();
+          if (offer) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            await roomRef.child('answer').set({
+              type: answer.type,
+              sdp: answer.sdp
+            });
+          }
+        });
+      }
 
       console.log(`Atendimento iniciado na sala ${roomCode}. Host: ${isHost}`);
     } catch (err) {
@@ -137,6 +188,11 @@
     if (peerConnection) {
       peerConnection.close();
       peerConnection = null;
+    }
+    if (roomRef) {
+      roomRef.off();
+      roomRef.remove();
+      roomRef = null;
     }
     document.getElementById('local-video').srcObject = null;
     document.getElementById('remote-video').srcObject = null;
