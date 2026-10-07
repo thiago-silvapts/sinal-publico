@@ -1,10 +1,14 @@
 # Entregas do Sinal Público
 
-- [ ] **Interface mobile-first em português do Brasil** — O app deve ter aparência de aplicativo de celular, adaptar-se a smartphones e desktop, usar como referência o `index.html` enviado e apresentar uma navegação inferior clara entre início, chamadas e conta.
-- [ ] **Fluxo de entrada na conta** — Deve existir uma tela para entrar na conta usando email ou telefone e senha, com validação essencial, opção de mostrar/ocultar senha e alternativa de login da conta Manus.
-- [ ] **Fluxo de criação de conta** — Deve existir uma tela para criar conta com nome, telefone, email e senha, com validações essenciais e feedback de sucesso; a tela deve deixar claro quando estiver em modo de demonstração.
-- [ ] **Criação e entrada em sala** — O painel deve permitir criar uma nova chamada e entrar usando um código de acesso, exibindo feedback quando o código for inválido.
-- [ ] **Sala de videochamada** — A sala deve mostrar áreas de vídeo local e remoto, identificação do intérprete, código da sala, estado ao vivo, qualidade de conexão e indicação de proteção.
-- [ ] **Controles da chamada** — Microfone e câmera devem alternar entre ativos e desativados, câmera deve ter indicação visual, e deve existir uma ação explícita para encerrar a chamada.
-- [ ] **PWA instalável** — Deve existir manifesto, ícone, service worker básico e ação de instalação quando suportada pelo navegador.
-- [ ] **Base preparada para autenticação real** — O starter Manus OAuth, banco e servidor devem permanecer integrados e sem credenciais próprias inventadas no frontend.
+- [x] **Interface mobile-first em português do Brasil** — Entregue com aparência de aplicativo de celular, adaptação para smartphones e desktop, referência visual do `index.html` enviado e navegação inferior entre início, chamadas e conta.
+- [x] **Fluxo de entrada na conta** — Entregue com tela para email ou telefone e senha, validação essencial, mostrar/ocultar senha e alternativa de login da conta Manus.
+- [x] **Fluxo de criação de conta** — Entregue com tela para nome, telefone, email e senha, validação essencial, feedback de sucesso e indicação de que a autenticação própria está em modo de demonstração.
+- [x] **Criação e entrada em sala** — Entregue com ação para criar uma nova chamada e campo para entrar usando código de acesso, incluindo feedback quando o código for inválido.
+- [x] **Sala de videochamada** — Entregue com áreas de vídeo local e remoto, identificação do intérprete, código da sala, estado ao vivo, qualidade de conexão e indicação de proteção.
+- [x] **Controles da chamada** — Entregue com alternância de microfone e câmera, indicação visual de câmera desativada e ação explícita para encerrar a chamada.
+- [x] **PWA instalável** — Entregue com manifesto, ícone, service worker básico, botão de instalação quando suportado e configuração `application_owned` salva no projeto.
+- [x] **Base preparada para autenticação real** — O starter Manus OAuth, banco e servidor foram preservados, sem credenciais próprias inventadas no frontend; os formulários de email/senha são o fluxo demonstrativo solicitado.
+
+## Validação
+
+`pnpm check`, `pnpm build` e `pnpm test` foram executados com sucesso. O preview respondeu em `http://127.0.0.1:3000`, e `/manifest.webmanifest`, `/sw.js` e `/manus-routes.json` retornaram HTTP 200.
