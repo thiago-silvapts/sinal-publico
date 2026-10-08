@@ -7,7 +7,8 @@ Criar um protótipo web responsivo, inspirado no `index.html` fornecido, para co
 ## Abordagem de implementação
 
 - **Frontend:** React + TypeScript no starter web-db-user já inicializado.
-- **Autenticação:** preservar Manus OAuth e o hook `useAuth` do starter para login real; oferecer também os formulários de login e criação de conta solicitados como protótipo de fluxo. O formulário de cadastro coleta nome, telefone, email e senha, mas a persistência de credenciais próprias fica para uma etapa posterior de backend seguro.
+- **Autenticação:** preservar Manus OAuth e o hook `useAuth` do starter para login real. O app não cria um sistema paralelo de senha própria: a senha de 8 dígitos permanece como requisito visual do fluxo solicitado, enquanto a sessão real usa o OAuth seguro da plataforma.
+- **Perfil persistente:** ampliar a tabela `users` com telefone, cidade, estado, gênero e perfil de uso (`deaf_person`, `interpreter` ou `establishment`), sem CPF ou CNPJ. Atualização e exclusão usam procedimentos protegidos no servidor.
 - **Experiência de chamada:** estado navegável de sala com código, vídeo local/remoto simulados visualmente, presença do intérprete, controles de microfone/câmera e encerramento. A integração WebRTC real fica preparada como próxima camada, sem fingir que uma chamada está conectada.
 - **PWA:** manifesto próprio, ícone SVG, service worker básico e botão de instalação quando o navegador disponibilizar `beforeinstallprompt`.
 - **Dados:** o banco e a autenticação do starter permanecem disponíveis para conectar usuários, salas e histórico em uma iteração seguinte.
@@ -36,4 +37,5 @@ Criar um protótipo web responsivo, inspirado no `index.html` fornecido, para co
 - `client/public/sw.js`: cache mínimo e fallback offline do shell.
 - `client/public/pwa-icon.svg`: ícone da marca usado no PWA.
 - `public/manus-routes.json`: manifesto de rotas exigido pelo Webdev.
-- `server/`: backend e autenticação Manus preservados para evolução real de usuários e salas.
+- `server/`: backend e autenticação Manus preservados para evolução real de usuários, perfis, salas, fila e histórico.
+- `drizzle/`: schema e migrações do banco para perfis e futuras entidades de atendimento.

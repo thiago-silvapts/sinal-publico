@@ -88,4 +88,25 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserProfileById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateUserProfile(id: number, input: Partial<Pick<InsertUser, "name" | "email" | "phone" | "city" | "state" | "gender" | "appRole">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(users).set(input).where(eq(users.id, id));
+  return getUserProfileById(id);
+}
+
+export async function deleteUserProfile(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(users).where(eq(users.id, id));
+  return { success: true as const };
+}
+
 // TODO: add feature queries here as your schema grows.

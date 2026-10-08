@@ -48,6 +48,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { trpc } from "./lib/trpc";
 
 type Screen = "home" | "login" | "signup" | "account" | "call";
 type ToastTone = "success" | "info" | "error";
@@ -57,7 +58,9 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-type Profile = { name: string; phone: string; email: string; city: string; state: string };
+type Gender = "female" | "male" | "non_binary" | "prefer_not_to_say" | "other";
+type AppRole = "deaf_person" | "interpreter" | "establishment";
+type Profile = { name: string; phone: string; email: string; city: string; state: string; gender: Gender; appRole: AppRole };
 type IbgeState = { id: number; sigla: string; nome: string };
 type IbgeCity = { id: number; nome: string };
 
@@ -68,10 +71,12 @@ const recentCalls = [
 
 function App() {
   const { user, logout } = useAuth();
+  const profileUpdate = trpc.auth.profile.update.useMutation();
+  const profileRemove = trpc.auth.profile.remove.useMutation();
   const [screen, setScreen] = useState<Screen>("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accountName, setAccountName] = useState("Camila");
-  const [profile, setProfile] = useState<Profile>({ name: "Camila", phone: "", email: "", city: "", state: "" });
+  const [profile, setProfile] = useState<Profile>({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
   const [states, setStates] = useState<IbgeState[]>([]);
   const [cities, setCities] = useState<IbgeCity[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
@@ -83,7 +88,7 @@ function App() {
   const [roomCode, setRoomCode] = useState("SP-4821");
   const [toast, setToast] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", state: "", gender: "" as Gender | "", appRole: "deaf_person" as AppRole, identity: "", password: "" });
 
   useEffect(() => {
     if (user?.name) {
@@ -148,12 +153,12 @@ function App() {
 
   const handleSignup = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || !form.city || !form.state || !/^\d{8}$/.test(form.password)) {
-      showToast("Preencha nome, telefone, email, cidade, estado e uma senha com exatamente 8 dígitos.", "error");
+    if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || !form.city || !form.state || !form.gender || !/^\d{8}$/.test(form.password)) {
+      showToast("Preencha nome, telefone, email, gênero, cidade, estado e uma senha com exatamente 8 dígitos.", "error");
       return;
     }
     setAccountName(form.name.trim().split(" ")[0]);
-    setProfile({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), city: form.city, state: form.state });
+    setProfile({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), city: form.city, state: form.state, gender: form.gender, appRole: form.appRole });
     setIsLoggedIn(true);
     setScreen("home");
     showToast("Conta criada com sucesso. Seu atendimento está mais perto.", "success");
@@ -180,19 +185,26 @@ function App() {
 
   const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!profile.name.trim() || !profile.phone.trim() || !profile.email.trim() || !profile.city || !profile.state) {
+    if (!profile.name.trim() || !profile.phone.trim() || !profile.email.trim() || !profile.city || !profile.state || !profile.gender) {
       showToast("Preencha todos os dados do perfil para salvar.", "error");
       return;
     }
     setAccountName(profile.name.trim().split(" ")[0]);
     setProfile((current) => ({ ...current, name: current.name.trim(), phone: current.phone.trim(), email: current.email.trim() }));
+    if (user) {
+      profileUpdate.mutate({ ...profile, name: profile.name.trim(), phone: profile.phone.trim(), email: profile.email.trim() }, {
+        onSuccess: () => showToast("Perfil salvo no banco de dados.", "success"),
+        onError: () => showToast("Não foi possível salvar no servidor. Tente novamente.", "error"),
+      });
+    }
     showToast("Perfil atualizado com sucesso.", "success");
   };
 
   const handleDeleteAccount = () => {
     if (!window.confirm("Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.")) return;
+    if (user) profileRemove.mutate(undefined, { onError: () => showToast("Não foi possível excluir a conta no servidor.", "error") });
     setIsLoggedIn(false);
-    setProfile({ name: "Camila", phone: "", email: "", city: "", state: "" });
+    setProfile({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
     setAccountName("Camila");
     setScreen("home");
     showToast("Sua conta foi excluída.", "info");
@@ -239,12 +251,12 @@ function App() {
 
   const openLogin = () => {
     setAuthMode("email");
-    setForm({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
+    setForm({ name: "", phone: "", email: "", city: "", state: "", gender: "", appRole: "deaf_person", identity: "", password: "" });
     setScreen("login");
   };
 
   const openSignup = () => {
-    setForm({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
+    setForm({ name: "", phone: "", email: "", city: "", state: "", gender: "", appRole: "deaf_person", identity: "", password: "" });
     setScreen("signup");
   };
 
@@ -437,7 +449,7 @@ type AuthScreenProps = {
   mode: "login" | "signup";
   authMode: "email" | "phone";
   showPassword: boolean;
-  form: { name: string; phone: string; email: string; city: string; state: string; identity: string; password: string };
+  form: { name: string; phone: string; email: string; city: string; state: string; gender: Gender | ""; appRole: AppRole; identity: string; password: string };
   states: IbgeState[];
   cities: IbgeCity[];
   citiesLoading: boolean;
@@ -445,7 +457,7 @@ type AuthScreenProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onModeChange: (mode: "email" | "phone") => void;
   onTogglePassword: () => void;
-  onChange: (field: "name" | "phone" | "email" | "city" | "state" | "identity" | "password", value: string) => void;
+  onChange: (field: "name" | "phone" | "email" | "city" | "state" | "gender" | "appRole" | "identity" | "password", value: string) => void;
   onManusLogin: () => void;
   onSwitch: () => void;
 };
@@ -465,6 +477,8 @@ function AuthScreen({ mode, authMode, showPassword, form, states, cities, cities
           {isSignup && <label>Nome completo<input value={form.name} onChange={(event) => onChange("name", event.target.value)} placeholder="Como podemos chamar você?" autoComplete="name" /></label>}
           {isSignup && <label>Telefone<input value={form.phone} onChange={(event) => onChange("phone", event.target.value)} placeholder="(11) 99999-0000" autoComplete="tel" /></label>}
           {isSignup && <label>Email<input value={form.email} onChange={(event) => onChange("email", event.target.value)} placeholder="voce@email.com" type="email" autoComplete="email" /></label>}
+          {isSignup && <label>Gênero<select value={form.gender} onChange={(event) => onChange("gender", event.target.value)}><option value="">Selecione uma opção</option><option value="female">Feminino</option><option value="male">Masculino</option><option value="non_binary">Não binário</option><option value="other">Outro</option><option value="prefer_not_to_say">Prefiro não informar</option></select></label>}
+          {isSignup && <label>Quero usar o app como<select value={form.appRole} onChange={(event) => onChange("appRole", event.target.value)}><option value="deaf_person">Pessoa surda</option><option value="interpreter">Intérprete de Libras</option><option value="establishment">Estabelecimento</option></select></label>}
           {isSignup && <label>Estado<select value={form.state} onChange={(event) => onChange("state", event.target.value)}><option value="">Selecione seu estado</option>{states.map((state) => <option key={state.id} value={state.sigla}>{state.nome} ({state.sigla})</option>)}</select></label>}
           {isSignup && <label>Cidade<select value={form.city} onChange={(event) => onChange("city", event.target.value)} disabled={!form.state || citiesLoading}><option value="">{citiesLoading ? "Carregando cidades..." : "Selecione sua cidade"}</option>{cities.map((city) => <option key={city.id} value={city.nome}>{city.nome}</option>)}</select></label>}
           {!isSignup && <label>{authMode === "email" ? "Email" : "Telefone"}<input value={form.identity} onChange={(event) => onChange("identity", event.target.value)} placeholder={authMode === "email" ? "voce@email.com" : "(11) 99999-0000"} type={authMode === "email" ? "email" : "tel"} autoComplete={authMode === "email" ? "email" : "tel"} /></label>}
@@ -501,6 +515,8 @@ function AccountScreen({ profile, states, cities, citiesLoading, onChange, onSav
         <label>Nome completo<input value={profile.name} onChange={(event) => onChange("name", event.target.value)} autoComplete="name" /></label>
         <label>Telefone<input value={profile.phone} onChange={(event) => onChange("phone", event.target.value)} autoComplete="tel" /></label>
         <label>Email<input value={profile.email} onChange={(event) => onChange("email", event.target.value)} type="email" autoComplete="email" /></label>
+        <label>Gênero<select value={profile.gender} onChange={(event) => onChange("gender", event.target.value)}><option value="female">Feminino</option><option value="male">Masculino</option><option value="non_binary">Não binário</option><option value="other">Outro</option><option value="prefer_not_to_say">Prefiro não informar</option></select></label>
+        <label>Perfil de uso<select value={profile.appRole} onChange={(event) => onChange("appRole", event.target.value)}><option value="deaf_person">Pessoa surda</option><option value="interpreter">Intérprete de Libras</option><option value="establishment">Estabelecimento</option></select></label>
         <label>Estado<select value={profile.state} onChange={(event) => onChange("state", event.target.value)}><option value="">Selecione seu estado</option>{states.map((state) => <option key={state.id} value={state.sigla}>{state.nome} ({state.sigla})</option>)}</select></label>
         <label>Cidade<select value={profile.city} onChange={(event) => onChange("city", event.target.value)} disabled={!profile.state || citiesLoading}><option value="">{citiesLoading ? "Carregando cidades..." : "Selecione sua cidade"}</option>{cities.map((city) => <option key={city.id} value={city.nome}>{city.nome}</option>)}</select></label>
         <button className="primary-button submit-button" type="submit"><Save size={17} /> Salvar alterações</button>

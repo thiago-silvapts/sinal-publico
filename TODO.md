@@ -11,7 +11,11 @@
 - [x] **Acesso aos serviços protegido por conta** — A tela inicial permanece pública e com aparência de celular, mas criar chamada, entrar com código e acessar chamadas exigem login ou criação de conta; visitantes recebem uma chamada clara para entrar ou criar conta.
 - [x] **Perfil completo com localização IBGE** — O cadastro agora solicita nome, telefone, email, estado e cidade carregados da API oficial do IBGE, além de senha numérica com exatamente 8 dígitos.
 - [x] **Gerenciamento da conta** — Usuário autenticado pode abrir Minha conta, alterar nome, telefone, email, estado e cidade, salvar alterações, sair e solicitar exclusão da conta com confirmação.
+- [x] **Gênero e perfil de uso no cadastro** — A criação de conta agora solicita gênero e permite indicar pessoa surda, intérprete de Libras ou estabelecimento; CPF e CNPJ não fazem parte do fluxo.
+- [x] **Persistência real do perfil** — A tabela `users` recebeu telefone, cidade, estado, gênero e perfil de uso; foram criadas rotas protegidas para consultar, atualizar e excluir o perfil, com migração aplicada pelo Drizzle.
+- [ ] **Atendimentos reais** — Criar entidades e telas de estabelecimentos, salas, fila de intérpretes, videochamada WebRTC e histórico persistente.
+- [ ] **Acessibilidade e segurança de produção** — Concluir permissões de mídia, consentimentos, termos, política de privacidade, recuperação de conta, alto contraste, teclado, leitor de tela e publicação final.
 
 ## Validação
 
-`pnpm check`, `pnpm build` e `pnpm test` foram executados com sucesso. O preview respondeu em `http://127.0.0.1:3000`, e `/manifest.webmanifest`, `/sw.js` e `/manus-routes.json` retornaram HTTP 200. A API do IBGE respondeu com os 27 estados brasileiros.
+`pnpm check`, `pnpm build` e `pnpm test` foram executados com sucesso. A migração `drizzle/0001_eager_doomsday.sql` foi gerada e aplicada. A API do IBGE respondeu com os 27 estados brasileiros.
