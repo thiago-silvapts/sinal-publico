@@ -22,6 +22,20 @@
       "when": 1791488175270,
       "tag": "0002_normal_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1791489919702,
+      "tag": "0003_odd_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1791490022012,
+      "tag": "0004_tan_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

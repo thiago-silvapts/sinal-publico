@@ -15,6 +15,9 @@
 - [x] **Persistência real do perfil** — A tabela `users` recebeu telefone, cidade, estado, gênero e perfil de uso; foram criadas rotas protegidas para consultar, atualizar e excluir o perfil, com migração aplicada pelo Drizzle.
 - [x] **Correções da base do perfil e IBGE** — O perfil persistido é hidratado ao iniciar a sessão, o salvamento/exclusão aguardam resposta do servidor, e as requisições de estados/cidades do IBGE validam HTTP e podem ser canceladas.
 - [x] **Painel administrativo de locais** — Administradores autenticados podem cadastrar, listar, editar, ativar/desativar e excluir locais de atendimento com nome, cidade, telefone e email; CPF e CNPJ não são solicitados.
+- [x] **Dois acessos administrativos** — O painel possui duas vagas por email Manus; o administrador pode adicionar ou remover cada acesso, e o login da pessoa convidada recebe a permissão `admin`.
+- [x] **Tela de entrada obrigatória** — O app inicia no login/criação de conta e retorna para o login após sair ou excluir a conta; as telas de serviço ficam protegidas.
+- [x] **Agendamentos** — Usuários autenticados podem criar, consultar e excluir eventos com título, data, horário e local pela aba Agenda na navegação inferior.
 - [ ] **Atendimentos reais** — Criar entidades e telas de salas, fila de intérpretes, videochamada WebRTC e histórico persistente.
 - [ ] **Acessibilidade e segurança de produção** — Concluir permissões de mídia, consentimentos, termos, política de privacidade, recuperação de conta, alto contraste, teclado, leitor de tela e publicação final.
 

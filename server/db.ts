@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertServiceLocation, InsertUser, serviceLocations, users } from "../drizzle/schema";
+import { adminAccess, appointments, InsertAppointment, InsertServiceLocation, InsertUser, serviceLocations, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -51,9 +51,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
+    const invitedAdmin = user.email ? await db.select({ id: adminAccess.id }).from(adminAccess).where(and(eq(adminAccess.email, user.email), eq(adminAccess.active, 1))).limit(1) : [];
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
+    } else if (invitedAdmin.length > 0) {
+      values.role = "admin";
+      updateSet.role = "admin";
     } else if (user.openId === ENV.ownerOpenId) {
       values.role = 'admin';
       updateSet.role = 'admin';
@@ -134,6 +138,50 @@ export async function deleteServiceLocation(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
   await db.delete(serviceLocations).where(eq(serviceLocations.id, id));
+  return { success: true as const };
+}
+
+export async function listAppointments(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(appointments).where(eq(appointments.userId, userId));
+}
+
+export async function createAppointment(input: Omit<InsertAppointment, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(appointments).values(input);
+  return { id: Number(result[0].insertId), ...input };
+}
+
+export async function deleteAppointment(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.userId, userId)));
+  return { success: true as const };
+}
+
+export async function listAdminAccess() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(adminAccess);
+}
+
+export async function createAdminAccess(email: string, createdBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const current = await db.select({ id: adminAccess.id }).from(adminAccess);
+  if (current.length >= 2) throw new Error("ADMIN_ACCESS_LIMIT_REACHED");
+  await db.insert(adminAccess).values({ email, createdBy, active: 1 });
+  return { success: true as const };
+}
+
+export async function deleteAdminAccess(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const target = await db.select({ email: adminAccess.email }).from(adminAccess).where(eq(adminAccess.id, id)).limit(1);
+  await db.delete(adminAccess).where(eq(adminAccess.id, id));
+  if (target[0]?.email) await db.update(users).set({ role: "user" }).where(eq(users.email, target[0].email));
   return { success: true as const };
 }
 

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Bell,
   Building2,
+  CalendarDays,
   Camera,
   CameraOff,
   Check,
@@ -50,7 +51,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { trpc } from "./lib/trpc";
 
-type Screen = "home" | "login" | "signup" | "account" | "admin" | "call";
+type Screen = "home" | "login" | "signup" | "account" | "admin" | "schedule" | "call";
 type ToastTone = "success" | "info" | "error";
 
 type InstallPromptEvent = Event & {
@@ -64,6 +65,8 @@ type Profile = { name: string; phone: string; email: string; city: string; state
 type IbgeState = { id: number; sigla: string; nome: string };
 type IbgeCity = { id: number; nome: string };
 type ServiceLocation = { id: number; name: string; city: string; phone: string; email: string; status: "active" | "inactive" };
+type Appointment = { id: number; title: string; date: string; time: string; location: string; status: "scheduled" | "cancelled" | "completed" };
+type AdminAccess = { id: number; email: string; active: number };
 
 const recentCalls = [
   { place: "UBS Vila Madalena", detail: "Atendimento em Libras", time: "Hoje, 10:42", initials: "UB" },
@@ -79,7 +82,13 @@ function App() {
   const locationCreate = trpc.admin.locations.create.useMutation({ onSuccess: () => locationsQuery.refetch() });
   const locationUpdate = trpc.admin.locations.update.useMutation({ onSuccess: () => locationsQuery.refetch() });
   const locationRemove = trpc.admin.locations.remove.useMutation({ onSuccess: () => locationsQuery.refetch() });
-  const [screen, setScreen] = useState<Screen>("home");
+  const appointmentsQuery = trpc.appointments.list.useQuery(undefined, { enabled: Boolean(user) });
+  const appointmentCreate = trpc.appointments.create.useMutation({ onSuccess: () => appointmentsQuery.refetch() });
+  const appointmentRemove = trpc.appointments.remove.useMutation({ onSuccess: () => appointmentsQuery.refetch() });
+  const adminAccessQuery = trpc.admin.access.list.useQuery(undefined, { enabled: user?.role === "admin" });
+  const adminAccessCreate = trpc.admin.access.create.useMutation({ onSuccess: () => adminAccessQuery.refetch() });
+  const adminAccessRemove = trpc.admin.access.remove.useMutation({ onSuccess: () => adminAccessQuery.refetch() });
+  const [screen, setScreen] = useState<Screen>("login");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accountName, setAccountName] = useState("Camila");
   const [profile, setProfile] = useState<Profile>({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
@@ -96,13 +105,17 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", state: "", gender: "" as Gender | "", appRole: "deaf_person" as AppRole, identity: "", password: "" });
   const [locationForm, setLocationForm] = useState({ name: "", city: "", phone: "", email: "" });
+  const [appointmentForm, setAppointmentForm] = useState({ title: "", date: "", time: "", location: "" });
+  const [adminEmail, setAdminEmail] = useState("");
 
   useEffect(() => {
     if (user?.name) {
       setAccountName(user.name.split(" ")[0]);
       setIsLoggedIn(true);
+      setScreen("home");
       setProfile((current) => ({ ...current, name: user.name ?? current.name, email: user.email ?? current.email }));
     }
+    if (!user && !isLoggedIn && screen !== "login" && screen !== "signup") setScreen("login");
   }, [user]);
 
   useEffect(() => {
@@ -196,7 +209,7 @@ function App() {
       // Keep the prototype usable when no session exists.
     }
     setIsLoggedIn(false);
-    setScreen("home");
+    setScreen("login");
     showToast("Você saiu da conta.", "info");
   };
 
@@ -224,7 +237,7 @@ function App() {
       setIsLoggedIn(false);
       setProfile({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
       setAccountName("Camila");
-      setScreen("home");
+      setScreen("login");
       showToast("Sua conta foi excluída.", "info");
     };
     if (user) {
@@ -240,6 +253,23 @@ function App() {
       return;
     }
     locationCreate.mutate(locationForm, { onSuccess: () => { setLocationForm({ name: "", city: "", phone: "", email: "" }); showToast("Local de atendimento cadastrado.", "success"); }, onError: () => showToast("Não foi possível cadastrar o local.", "error") });
+  };
+
+  const handleCreateAppointment = () => {
+    if (!user) {
+      showToast("Entre com sua conta Manus para salvar agendamentos.", "info");
+      return;
+    }
+    if (!appointmentForm.title.trim() || !appointmentForm.date || !appointmentForm.time || !appointmentForm.location.trim()) {
+      showToast("Preencha evento, data, horário e local.", "error");
+      return;
+    }
+    appointmentCreate.mutate(appointmentForm, { onSuccess: () => { setAppointmentForm({ title: "", date: "", time: "", location: "" }); showToast("Agendamento criado.", "success"); }, onError: () => showToast("Não foi possível criar o agendamento.", "error") });
+  };
+
+  const handleCreateAdminAccess = () => {
+    if (!adminEmail.trim()) { showToast("Informe o email do novo administrador.", "error"); return; }
+    adminAccessCreate.mutate({ email: adminEmail.trim().toLowerCase() }, { onSuccess: () => { setAdminEmail(""); showToast("Acesso administrativo criado. A pessoa deve entrar com essa conta Manus.", "success"); }, onError: (error) => showToast(error.message.includes("LIMIT") ? "As duas vagas administrativas já estão preenchidas." : "Não foi possível criar este acesso.", "error") });
   };
 
   const handleCreateCall = () => {
@@ -312,6 +342,7 @@ function App() {
                   onSignup={openSignup}
                   onInstall={handleInstall}
                   onOpenAccount={() => (isLoggedIn ? setScreen("account") : openLogin())}
+                  onSchedule={() => (isLoggedIn ? setScreen("schedule") : openLogin())}
                 />
               )}
               {screen === "login" && (
@@ -323,7 +354,7 @@ function App() {
                   states={states}
                   cities={cities}
                   citiesLoading={citiesLoading}
-                  onBack={() => setScreen("home")}
+                  onBack={() => setScreen("login")}
                   onSubmit={handleLogin}
                   onModeChange={setAuthMode}
                   onTogglePassword={() => setShowPassword((value) => !value)}
@@ -341,7 +372,7 @@ function App() {
                   states={states}
                   cities={cities}
                   citiesLoading={citiesLoading}
-                  onBack={() => setScreen("home")}
+                  onBack={() => setScreen("login")}
                   onSubmit={handleSignup}
                   onModeChange={setAuthMode}
                   onTogglePassword={() => setShowPassword((value) => !value)}
@@ -351,7 +382,8 @@ function App() {
                 />
               )}
               {screen === "account" && <AccountScreen profile={profile} states={states} cities={cities} citiesLoading={citiesLoading} isAdmin={user?.role === "admin"} onAdmin={() => setScreen("admin")} onChange={(field, value) => setProfile((current) => ({ ...current, [field]: value, ...(field === "state" ? { city: "" } : {}) }))} onSave={handleProfileSave} onDelete={handleDeleteAccount} onLogout={handleLogout} onBack={() => setScreen("home")} />}
-              {screen === "admin" && <AdminScreen locations={(locationsQuery.data ?? []) as ServiceLocation[]} form={locationForm} loading={locationsQuery.isLoading || locationCreate.isPending} onFormChange={(field, value) => setLocationForm((current) => ({ ...current, [field]: value }))} onCreate={handleCreateLocation} onUpdate={(location) => locationUpdate.mutate(location, { onSuccess: () => showToast("Local atualizado.", "success"), onError: () => showToast("Não foi possível atualizar o local.", "error") })} onRemove={(id) => { if (window.confirm("Excluir este local de atendimento?")) locationRemove.mutate({ id }, { onSuccess: () => showToast("Local excluído.", "info"), onError: () => showToast("Não foi possível excluir o local.", "error") }); }} onBack={() => setScreen("account")} />}
+              {screen === "admin" && <AdminScreen access={(adminAccessQuery.data ?? []) as AdminAccess[]} adminEmail={adminEmail} locations={(locationsQuery.data ?? []) as ServiceLocation[]} form={locationForm} loading={locationsQuery.isLoading || locationCreate.isPending} accessLoading={adminAccessCreate.isPending} onAdminEmailChange={setAdminEmail} onCreateAccess={handleCreateAdminAccess} onRemoveAccess={(id) => { if (window.confirm("Remover este acesso administrativo?")) adminAccessRemove.mutate({ id }, { onSuccess: () => showToast("Acesso removido.", "info"), onError: () => showToast("Não foi possível remover o acesso.", "error") }); }} onFormChange={(field, value) => setLocationForm((current) => ({ ...current, [field]: value }))} onCreate={handleCreateLocation} onUpdate={(location) => locationUpdate.mutate(location, { onSuccess: () => showToast("Local atualizado.", "success"), onError: () => showToast("Não foi possível atualizar o local.", "error") })} onRemove={(id) => { if (window.confirm("Excluir este local de atendimento?")) locationRemove.mutate({ id }, { onSuccess: () => showToast("Local excluído.", "info"), onError: () => showToast("Não foi possível excluir o local.", "error") }); }} onBack={() => setScreen("account")} />}
+              {screen === "schedule" && <ScheduleScreen appointments={(appointmentsQuery.data ?? []) as Appointment[]} form={appointmentForm} loading={appointmentCreate.isPending} onFormChange={(field, value) => setAppointmentForm((current) => ({ ...current, [field]: value }))} onCreate={handleCreateAppointment} onRemove={(id) => { if (window.confirm("Excluir este agendamento?")) appointmentRemove.mutate({ id }, { onSuccess: () => showToast("Agendamento excluído.", "info"), onError: () => showToast("Não foi possível excluir o agendamento.", "error") }); }} onBack={() => setScreen("home")} />}
               {screen === "call" && (
                 <CallScreen
                   roomCode={roomCode}
@@ -387,6 +419,7 @@ type HomeScreenProps = {
   onSignup: () => void;
   onInstall: () => void;
   onOpenAccount: () => void;
+  onSchedule: () => void;
 };
 
 function HomeScreen({
@@ -401,6 +434,7 @@ function HomeScreen({
   onSignup,
   onInstall,
   onOpenAccount,
+  onSchedule,
 }: HomeScreenProps) {
   return (
     <div className="screen-stack">
@@ -473,7 +507,7 @@ function HomeScreen({
         {!isLoggedIn && <section className="account-prompt"><div><span className="section-kicker">TENHA MAIS CONTROLE</span><h3>Crie sua conta gratuita</h3><p>Salve seus atendimentos e encontre tudo com facilidade.</p></div><div className="account-actions"><button className="outline-button" onClick={onLogin}><LogIn size={16} /> Entrar</button><button className="primary-button compact-button" onClick={onSignup}><UserPlus size={16} /> Criar conta</button></div></section>}
       </main>
 
-      <BottomNav active="home" onAccount={onOpenAccount} onCall={onCreateCall} />
+      <BottomNav active="home" onAccount={onOpenAccount} onCall={onCreateCall} onSchedule={onSchedule} />
     </div>
   );
 }
@@ -563,10 +597,40 @@ function AccountScreen({ profile, states, cities, citiesLoading, isAdmin, onAdmi
   </div>;
 }
 
+type ScheduleScreenProps = {
+  appointments: Appointment[];
+  form: { title: string; date: string; time: string; location: string };
+  loading: boolean;
+  onFormChange: (field: "title" | "date" | "time" | "location", value: string) => void;
+  onCreate: () => void;
+  onRemove: (id: number) => void;
+  onBack: () => void;
+};
+
+function ScheduleScreen({ appointments, form, loading, onFormChange, onCreate, onRemove, onBack }: ScheduleScreenProps) {
+  return <div className="screen-stack auth-screen">
+    <header className="topbar auth-topbar"><button className="back-button" onClick={onBack} aria-label="Voltar"><ArrowLeft size={20} /></button><span className="auth-step">AGENDAMENTOS</span><CalendarDays size={19} className="schedule-header-icon" /></header>
+    <main className="content auth-content schedule-content">
+      <div className="auth-brand"><span className="brand-mark large-mark"><CalendarDays size={25} /></span><span className="section-kicker">AGENDA DO ATENDIMENTO</span></div>
+      <div className="auth-heading"><span className="eyebrow"><span className="live-dot" /> ORGANIZE SEU DIA</span><h1>Seus eventos,<br /><em>no seu tempo.</em></h1><p>Confira o que está marcado ou crie um novo atendimento.</p></div>
+      <section className="schedule-form-card"><span className="section-kicker">NOVO AGENDAMENTO</span><input value={form.title} onChange={(event) => onFormChange("title", event.target.value)} placeholder="Nome do evento" /><div className="schedule-fields"><input type="date" value={form.date} onChange={(event) => onFormChange("date", event.target.value)} aria-label="Data" /><input type="time" value={form.time} onChange={(event) => onFormChange("time", event.target.value)} aria-label="Horário" /></div><input value={form.location} onChange={(event) => onFormChange("location", event.target.value)} placeholder="Local ou estabelecimento" /><button className="primary-button submit-button" onClick={onCreate} disabled={loading}><Plus size={17} /> {loading ? "Salvando..." : "Marcar evento"}</button></section>
+      <div className="section-heading schedule-list-heading"><div><span className="section-kicker">PRÓXIMOS EVENTOS</span><h2>{appointments.length ? "Sua agenda" : "Nada marcado ainda"}</h2></div></div>
+      <section className="appointment-list">{appointments.length === 0 ? <div className="empty-admin"><CalendarDays size={22} /><p>Quando você marcar um evento, ele aparecerá aqui.</p></div> : appointments.map((appointment) => <article className="appointment-card" key={appointment.id}><div className="appointment-date"><strong>{appointment.date.slice(8, 10)}</strong><span>{appointment.date.slice(5, 7)}/{appointment.date.slice(0, 4)}</span></div><div className="appointment-copy"><strong>{appointment.title}</strong><span>{appointment.time} · {appointment.location}</span></div><button className="delete-button" onClick={() => onRemove(appointment.id)} aria-label={`Excluir ${appointment.title}`}><Trash2 size={14} /></button></article>)}</section>
+      <p className="prototype-note"><Bell size={13} /> Você poderá acompanhar seus atendimentos e compromissos nesta agenda.</p>
+    </main>
+  </div>;
+}
+
 type AdminScreenProps = {
+  access: AdminAccess[];
+  adminEmail: string;
   locations: ServiceLocation[];
   form: { name: string; city: string; phone: string; email: string };
   loading: boolean;
+  accessLoading: boolean;
+  onAdminEmailChange: (value: string) => void;
+  onCreateAccess: () => void;
+  onRemoveAccess: (id: number) => void;
   onFormChange: (field: "name" | "city" | "phone" | "email", value: string) => void;
   onCreate: () => void;
   onUpdate: (location: ServiceLocation) => void;
@@ -574,7 +638,7 @@ type AdminScreenProps = {
   onBack: () => void;
 };
 
-function AdminScreen({ locations, form, loading, onFormChange, onCreate, onUpdate, onRemove, onBack }: AdminScreenProps) {
+function AdminScreen({ access, adminEmail, locations, form, loading, accessLoading, onAdminEmailChange, onCreateAccess, onRemoveAccess, onFormChange, onCreate, onUpdate, onRemove, onBack }: AdminScreenProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editing, setEditing] = useState<ServiceLocation | null>(null);
   return <div className="screen-stack auth-screen">
@@ -582,6 +646,8 @@ function AdminScreen({ locations, form, loading, onFormChange, onCreate, onUpdat
     <main className="content auth-content admin-content">
       <div className="auth-brand"><span className="brand-mark large-mark"><Building2 size={25} /></span><span className="section-kicker">LOCAIS DE ATENDIMENTO</span></div>
       <div className="auth-heading"><span className="eyebrow"><span className="live-dot" /> GESTÃO DO SERVIÇO</span><h1>Onde o atendimento<br /><em>acontece.</em></h1><p>Cadastre os locais públicos e privados que poderão receber chamadas.</p></div>
+      <section className="admin-overview-grid"><div><span><UsersRound size={15} /></span><strong>{access.length}/2</strong><small>Acessos admin</small></div><div><span><Building2 size={15} /></span><strong>{locations.length}</strong><small>Locais cadastrados</small></div><div><span><CheckCircle2 size={15} /></span><strong>{locations.filter((location) => location.status === "active").length}</strong><small>Locais ativos</small></div></section>
+      <section className="admin-access-card"><div className="admin-access-heading"><div><span className="section-kicker">ACESSOS ADMINISTRATIVOS</span><h3>{access.length}/2 vagas usadas</h3></div><ShieldCheck size={20} /></div><p>Adicione até duas pessoas. Elas devem entrar usando uma conta Manus com o email informado.</p><div className="admin-access-form"><input type="email" value={adminEmail} onChange={(event) => onAdminEmailChange(event.target.value)} placeholder="email@administrador.com" /><button className="primary-button compact-button" onClick={onCreateAccess} disabled={accessLoading}><Plus size={15} /> Adicionar</button></div>{access.length > 0 && <div className="admin-access-list">{access.map((item, index) => <div className="admin-access-item" key={item.id}><span className="access-number">{index + 1}</span><span>{item.email}</span><button className="delete-button" onClick={() => onRemoveAccess(item.id)} aria-label={`Remover ${item.email}`}><Trash2 size={14} /></button></div>)}</div>}</section>
       <section className="admin-form-card"><span className="section-kicker">NOVO LOCAL</span><div className="admin-form-grid"><input value={form.name} onChange={(event) => onFormChange("name", event.target.value)} placeholder="Nome do local" /><input value={form.city} onChange={(event) => onFormChange("city", event.target.value)} placeholder="Cidade" /><input value={form.phone} onChange={(event) => onFormChange("phone", event.target.value)} placeholder="Telefone" /><input value={form.email} onChange={(event) => onFormChange("email", event.target.value)} placeholder="Email" type="email" /></div><button className="primary-button submit-button" onClick={onCreate} disabled={loading}><Plus size={17} /> {loading ? "Salvando..." : "Adicionar local"}</button></section>
       <div className="section-heading admin-list-heading"><div><span className="section-kicker">CADASTRADOS</span><h2>{locations.length} {locations.length === 1 ? "local" : "locais"}</h2></div></div>
       <section className="admin-location-list">{locations.length === 0 && <div className="empty-admin"><Building2 size={22} /><p>Nenhum local cadastrado ainda.</p></div>}{locations.map((location) => { const item = editingId === location.id && editing ? editing : location; return <article className="admin-location-card" key={location.id}>{editingId === location.id ? <div className="admin-edit-grid"><input value={item.name} onChange={(event) => setEditing({ ...item, name: event.target.value })} /><input value={item.city} onChange={(event) => setEditing({ ...item, city: event.target.value })} /><input value={item.phone} onChange={(event) => setEditing({ ...item, phone: event.target.value })} /><input value={item.email} onChange={(event) => setEditing({ ...item, email: event.target.value })} type="email" /><div className="admin-card-actions"><button className="primary-button compact-button" onClick={() => { onUpdate(item); setEditingId(null); setEditing(null); }}><Save size={14} /> Salvar</button><button className="outline-button" onClick={() => { setEditingId(null); setEditing(null); }}>Cancelar</button></div></div> : <><div className="location-main"><span className="location-icon"><Building2 size={18} /></span><div><strong>{location.name} <small className={`location-status ${location.status}`}>{location.status === "active" ? "ativo" : "inativo"}</small></strong><span>{location.city} · {location.phone}</span><small>{location.email}</small></div></div><div className="admin-card-actions"><button className="outline-button" onClick={() => onUpdate({ ...location, status: location.status === "active" ? "inactive" : "active" })}>{location.status === "active" ? "Desativar" : "Ativar"}</button><button className="outline-button" onClick={() => { setEditingId(location.id); setEditing(location); }}>Editar</button><button className="delete-button" onClick={() => onRemove(location.id)}><Trash2 size={14} /> Excluir</button></div></>}</article>; })}</section>
@@ -619,8 +685,8 @@ function CallControl({ icon, label, active = false, onClick }: { icon: React.Rea
   return <button className={`call-control ${active ? "control-active" : ""}`} onClick={onClick}><span>{icon}</span><small>{label}</small></button>;
 }
 
-function BottomNav({ active, onAccount, onCall }: { active: "home"; onAccount: () => void; onCall: () => void }) {
-  return <nav className="bottom-nav" aria-label="Navegação principal"><button className={active === "home" ? "nav-active" : ""}><span><Sparkles size={19} /></span><small>Início</small></button><button onClick={onCall}><span><Video size={19} /></span><small>Chamadas</small></button><button onClick={onAccount}><span><UserRound size={19} /></span><small>Conta</small></button></nav>;
+function BottomNav({ active, onAccount, onCall, onSchedule }: { active: "home"; onAccount: () => void; onCall: () => void; onSchedule: () => void }) {
+  return <nav className="bottom-nav" aria-label="Navegação principal"><button className={active === "home" ? "nav-active" : ""}><span><Sparkles size={19} /></span><small>Início</small></button><button onClick={onCall}><span><Video size={19} /></span><small>Chamadas</small></button><button onClick={onSchedule}><span><CalendarDays size={19} /></span><small>Agenda</small></button><button onClick={onAccount}><span><UserRound size={19} /></span><small>Conta</small></button></nav>;
 }
 
 function Toast({ message, tone, onClose }: { message: string; tone: ToastTone; onClose: () => void }) {

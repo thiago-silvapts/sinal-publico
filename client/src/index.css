@@ -130,7 +130,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .gate-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .gate-actions button { flex: 1; }
 
-.bottom-nav { position: fixed; z-index: 20; bottom: 0; width: min(100%, 460px); display: grid; grid-template-columns: repeat(3, 1fr); padding: 11px 27px max(11px, env(safe-area-inset-bottom)); background: rgba(255,255,255,.93); border-top: 1px solid rgba(220,232,229,.9); backdrop-filter: blur(18px); }
+.bottom-nav { position: fixed; z-index: 20; bottom: 0; width: min(100%, 460px); display: grid; grid-template-columns: repeat(4, 1fr); padding: 11px 18px max(11px, env(safe-area-inset-bottom)); background: rgba(255,255,255,.93); border-top: 1px solid rgba(220,232,229,.9); backdrop-filter: blur(18px); }
 .bottom-nav button { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #93a3a4; background: transparent; }
 .bottom-nav button span { display: grid; place-items: center; width: 35px; height: 25px; border-radius: 10px; }
 .bottom-nav small { font-size: 9px; font-weight: 700; }
@@ -176,6 +176,23 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .admin-badge { padding: 5px 8px; color: var(--teal-dark); background: var(--teal-soft); border-radius: 8px; font-size: 8px; font-weight: 850; letter-spacing: .08em; }
 .admin-content { padding-bottom: 36px; }
 .admin-form-card { padding: 15px; border: 1px solid #cfe5e0; border-radius: 17px; background: rgba(234,247,243,.82); }
+.admin-access-card { margin-bottom: 11px; padding: 15px; border: 1px solid #d7dfe9; border-radius: 17px; background: linear-gradient(135deg, #f3f7fc, #fff); }
+.admin-overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 11px; }
+.admin-overview-grid > div { display: flex; flex-direction: column; gap: 4px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.admin-overview-grid span { color: var(--teal); }
+.admin-overview-grid strong { color: var(--ink); font-size: 18px; line-height: 1; }
+.admin-overview-grid small { color: var(--muted-ink); font-size: 8px; }
+.admin-access-heading { display: flex; align-items: center; justify-content: space-between; color: var(--teal); }
+.admin-access-heading h3 { margin: 5px 0 0; color: var(--ink); font-size: 13px; }
+.admin-access-card > p { margin: 10px 0; color: var(--muted-ink); font-size: 9px; line-height: 1.45; }
+.admin-access-form { display: flex; gap: 7px; }
+.admin-access-form input { min-width: 0; flex: 1; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: white; font-size: 10px; }
+.admin-access-form button { flex: 0 0 auto; min-height: 38px; }
+.admin-access-list { display: flex; flex-direction: column; gap: 6px; margin-top: 11px; }
+.admin-access-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e1e8ee; border-radius: 9px; background: white; color: var(--ink); font-size: 9px; }
+.admin-access-item > span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.access-number { width: 20px; height: 20px; display: grid; place-items: center; color: var(--teal-dark); background: var(--teal-soft); border-radius: 7px; font-size: 9px; font-weight: 800; }
+.admin-access-item .delete-button { min-width: 27px; min-height: 27px; padding: 0; }
 .admin-form-grid, .admin-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 11px 0; }
 .admin-form-grid input, .admin-edit-grid input { min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 10px; }
 .admin-form-card .submit-button { min-height: 40px; margin-top: 2px; }
@@ -195,6 +212,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .admin-edit-grid { margin: 0; }
 .empty-admin { display: grid; place-items: center; gap: 7px; padding: 25px; color: #89a0a0; border: 1px dashed #c8dcd8; border-radius: 15px; text-align: center; }
 .empty-admin p { margin: 0; font-size: 10px; }
+.schedule-header-icon { color: var(--teal); }
+.schedule-form-card { display: flex; flex-direction: column; gap: 10px; padding: 15px; border: 1px solid #cfe5e0; border-radius: 17px; background: rgba(234,247,243,.82); }
+.schedule-form-card input { width: 100%; height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); font-size: 11px; }
+.schedule-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.schedule-form-card .submit-button { margin-top: 0; }
+.schedule-list-heading { margin-top: 24px; }
+.appointment-list { display: flex; flex-direction: column; gap: 9px; }
+.appointment-card { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: 15px; background: white; box-shadow: 0 6px 18px rgba(20,56,64,.04); }
+.appointment-date { width: 43px; height: 48px; display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 0 0 auto; color: var(--teal-dark); background: var(--teal-soft); border-radius: 11px; }
+.appointment-date strong { font-size: 17px; line-height: 1; }
+.appointment-date span { margin-top: 4px; font-size: 8px; font-weight: 750; }
+.appointment-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
+.appointment-copy strong { overflow: hidden; color: var(--ink); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.appointment-copy span { overflow: hidden; color: var(--muted-ink); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.appointment-card .delete-button { min-width: 32px; padding: 0; }
 
 .call-screen { color: white; background: #081b27; }
 .call-topbar { height: 71px; display: flex; align-items: center; justify-content: space-between; padding: 16px 19px 10px; background: #081b27; }

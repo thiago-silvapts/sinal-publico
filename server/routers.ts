@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { createServiceLocation, deleteServiceLocation, deleteUserProfile, getUserProfileById, listServiceLocations, updateServiceLocation, updateUserProfile } from "./db";
+import { createAdminAccess, createAppointment, createServiceLocation, deleteAdminAccess, deleteAppointment, deleteServiceLocation, deleteUserProfile, getUserProfileById, listAdminAccess, listAppointments, listServiceLocations, updateServiceLocation, updateUserProfile } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -32,7 +32,23 @@ export const appRouter = router({
     }),
   }),
 
+  appointments: router({
+    list: protectedProcedure.query(({ ctx }) => listAppointments(ctx.user.id)),
+    create: protectedProcedure.input(z.object({
+      title: z.string().trim().min(2).max(180),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      time: z.string().regex(/^\d{2}:\d{2}$/),
+      location: z.string().trim().min(2).max(180),
+    })).mutation(({ ctx, input }) => createAppointment({ ...input, userId: ctx.user.id, status: "scheduled" })),
+    remove: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteAppointment(input.id, ctx.user.id)),
+  }),
+
   admin: router({
+    access: router({
+      list: adminProcedure.query(() => listAdminAccess()),
+      create: adminProcedure.input(z.object({ email: z.string().email() })).mutation(({ ctx, input }) => createAdminAccess(input.email.toLowerCase(), ctx.user.id)),
+      remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteAdminAccess(input.id)),
+    }),
     locations: router({
       list: adminProcedure.query(() => listServiceLocations()),
       create: adminProcedure.input(z.object({

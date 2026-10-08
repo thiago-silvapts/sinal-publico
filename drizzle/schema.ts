@@ -44,3 +44,30 @@ export const serviceLocations = mysqlTable("serviceLocations", {
 
 export type ServiceLocation = typeof serviceLocations.$inferSelect;
 export type InsertServiceLocation = typeof serviceLocations.$inferInsert;
+
+export const appointments = mysqlTable("appointments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  time: varchar("time", { length: 5 }).notNull(),
+  location: varchar("location", { length: 180 }).notNull(),
+  status: mysqlEnum("status", ["scheduled", "cancelled", "completed"]).default("scheduled").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;
+
+export const adminAccess = mysqlTable("adminAccess", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  active: int("active").default(1).notNull(),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AdminAccess = typeof adminAccess.$inferSelect;
+export type InsertAdminAccess = typeof adminAccess.$inferInsert;
