@@ -147,6 +147,11 @@ function App() {
   };
 
   const handleCreateCall = () => {
+    if (!isLoggedIn) {
+      openLogin();
+      showToast("Entre ou crie sua conta para acessar os serviços.", "info");
+      return;
+    }
     setRoomCode("SP-4821");
     setScreen("call");
     showToast("Sala criada. O intérprete foi convidado.", "success");
@@ -154,6 +159,11 @@ function App() {
 
   const handleJoinCall = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+    if (!isLoggedIn) {
+      openLogin();
+      showToast("Entre ou crie sua conta para acessar os serviços.", "info");
+      return;
+    }
     const normalized = roomInput.trim().replace(/\s/g, "");
     if (normalized.length < 4) {
       showToast("Digite o código de acesso enviado pelo estabelecimento.", "error");
@@ -325,6 +335,8 @@ function HomeScreen({
           <div><HeartHandshake size={18} /><span><strong>Com intérprete</strong><small>Atendimento humano</small></span></div>
           <div><Globe2 size={18} /><span><strong>Onde precisar</strong><small>Público e privado</small></span></div>
         </section>
+
+        {!isLoggedIn && <section className="access-gate"><div className="gate-icon"><LockKeyhole size={19} /></div><div><span className="section-kicker">ACESSO AOS SERVIÇOS</span><h3>Entre para continuar</h3><p>Crie sua conta ou faça login para iniciar atendimentos e acessar chamadas com intérprete.</p></div><div className="gate-actions"><button className="outline-button" onClick={onLogin}><LogIn size={15} /> Entrar</button><button className="primary-button compact-button" onClick={onSignup}><UserPlus size={15} /> Criar conta</button></div></section>}
 
         <section className="section-heading"><div><span className="section-kicker">ACESSAR ATENDIMENTO</span><h2>Qual é o próximo passo?</h2></div><span className="step-count">01 <span>/ 02</span></span></section>
 

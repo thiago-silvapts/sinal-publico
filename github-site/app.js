@@ -32,6 +32,7 @@ function home() {
   return `<div class="screen">${header()}<main class="content">
     <section class="hero"><span class="eyebrow">● ATENDIMENTO EM LIBRAS</span><h1>A comunicação<br><em>começa aqui.</em></h1><p>Conecte-se a um serviço público ou privado com um intérprete ao seu lado.</p><span class="hello">✋<small>Olá, ${esc(state.name)}</small></span><button class="primary light" data-action="create-call">▣ Criar nova chamada　→</button><button class="text light-text" data-action="join-focus">Já tenho um código　›</button></section>
     <section class="trust"><div>♢ <b>Protegido<small>Conexão segura</small></b></div><div>♡ <b>Com intérprete<small>Atendimento humano</small></b></div><div>◎ <b>Onde precisar<small>Público e privado</small></b></div></section>
+    ${!state.signedIn ? `<section class="access-gate"><div class="gate-icon">▣</div><div><span>ACESSO AOS SERVIÇOS</span><h3>Entre para continuar</h3><p>Crie sua conta ou faça login para iniciar atendimentos e acessar chamadas com intérprete.</p></div><div class="gate-actions"><button class="outline" data-action="login">Entrar</button><button class="primary compact" data-action="signup">Criar conta</button></div></section>` : ''}
     <div class="section-title"><div><span>ACESSAR ATENDIMENTO</span><h2>Qual é o próximo passo?</h2></div><b>01 <i>/ 02</i></b></div>
     <section class="card join" id="join-card"><div class="card-icon">⌕</div><div><h3>Entrar com código</h3><p>Recebeu um código do estabelecimento? Digite abaixo para entrar.</p></div><form data-form="join"><input name="room" placeholder="Ex.: 4821" maxlength="8" aria-label="Código da sala"><button class="primary" type="submit">Entrar　→</button></form></section>
     <section class="card interpreter"><div class="interpreter-icon">✋</div><div><span class="online">● Intérprete disponível</span><h3>Você não está sozinho</h3><p>Peça apoio em Libras para ser compreendido.</p></div><button class="round">›</button></section>
@@ -59,7 +60,7 @@ function bind() {
     if (action === 'home') go('home');
     if (action === 'login' || action === 'signup') go(action);
     if (action === 'account') state.signedIn ? toast('Sua conta está ativa neste dispositivo.') : go('login');
-    if (action === 'call' || action === 'create-call') { state.room = 'SP-4821'; go('call'); toast('Sala criada. O intérprete foi convidado.', 'success'); }
+    if (action === 'call' || action === 'create-call') { if (!state.signedIn) { go('login'); toast('Entre ou crie sua conta para acessar os serviços.'); return; } state.room = 'SP-4821'; go('call'); toast('Sala criada. O intérprete foi convidado.', 'success'); }
     if (action === 'toggle-mic') { state.mic = !state.mic; render(); }
     if (action === 'toggle-camera') { state.camera = !state.camera; render(); }
     if (action === 'end-call') { go('home'); toast('Chamada encerrada. Até a próxima!'); }
@@ -72,6 +73,7 @@ function bind() {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form));
     if (form.dataset.form === 'join') {
+      if (!state.signedIn) { go('login'); toast('Entre ou crie sua conta para acessar os serviços.'); return; }
       if (!data.room || String(data.room).trim().length < 4) return toast('Digite o código de acesso enviado pelo estabelecimento.', 'error');
       state.room = `SP-${String(data.room).replace(/\D/g, '').slice(-4) || '4821'}`; go('call'); return;
     }
