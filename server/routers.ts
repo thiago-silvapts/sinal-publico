@@ -1,8 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { deleteUserProfile, getUserProfileById, updateUserProfile } from "./db";
+import { adminProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { createServiceLocation, deleteServiceLocation, deleteUserProfile, getUserProfileById, listServiceLocations, updateServiceLocation, updateUserProfile } from "./db";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -29,6 +29,27 @@ export const appRouter = router({
         appRole: z.enum(["deaf_person", "interpreter", "establishment"]),
       })).mutation(({ ctx, input }) => updateUserProfile(ctx.user.id, input)),
       remove: protectedProcedure.mutation(({ ctx }) => deleteUserProfile(ctx.user.id)),
+    }),
+  }),
+
+  admin: router({
+    locations: router({
+      list: adminProcedure.query(() => listServiceLocations()),
+      create: adminProcedure.input(z.object({
+        name: z.string().trim().min(2).max(180),
+        city: z.string().trim().min(2).max(120),
+        phone: z.string().trim().min(8).max(32),
+        email: z.string().email(),
+      })).mutation(({ ctx, input }) => createServiceLocation({ ...input, createdBy: ctx.user.id, status: "active" })),
+      update: adminProcedure.input(z.object({
+        id: z.number().int().positive(),
+        name: z.string().trim().min(2).max(180),
+        city: z.string().trim().min(2).max(120),
+        phone: z.string().trim().min(8).max(32),
+        email: z.string().email(),
+        status: z.enum(["active", "inactive"]),
+      })).mutation(({ input }) => updateServiceLocation(input.id, input)),
+      remove: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ input }) => deleteServiceLocation(input.id)),
     }),
   }),
 

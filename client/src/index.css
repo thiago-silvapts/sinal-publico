@@ -172,6 +172,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .account-management { display: flex; gap: 9px; margin-top: 18px; }
 .account-management > button { flex: 1; }
 .delete-button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; color: #a94f4a; background: #fff; border: 1px solid #edc5c1; border-radius: 10px; font-size: 10px; font-weight: 750; }
+.admin-link-button { width: 100%; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; color: var(--teal-dark); background: var(--teal-soft); border: 1px solid #c5e4dd; border-radius: 11px; font-size: 10px; font-weight: 800; }
+.admin-badge { padding: 5px 8px; color: var(--teal-dark); background: var(--teal-soft); border-radius: 8px; font-size: 8px; font-weight: 850; letter-spacing: .08em; }
+.admin-content { padding-bottom: 36px; }
+.admin-form-card { padding: 15px; border: 1px solid #cfe5e0; border-radius: 17px; background: rgba(234,247,243,.82); }
+.admin-form-grid, .admin-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 11px 0; }
+.admin-form-grid input, .admin-edit-grid input { min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 10px; }
+.admin-form-card .submit-button { min-height: 40px; margin-top: 2px; }
+.admin-list-heading { margin-top: 24px; }
+.admin-location-list { display: flex; flex-direction: column; gap: 9px; }
+.admin-location-card { padding: 13px; border: 1px solid var(--line); border-radius: 15px; background: #fff; box-shadow: 0 6px 18px rgba(20,56,64,.04); }
+.location-main { display: flex; align-items: flex-start; gap: 10px; }
+.location-icon { width: 31px; height: 31px; display: grid; place-items: center; flex: 0 0 auto; color: var(--teal); background: var(--teal-soft); border-radius: 10px; }
+.location-main > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.location-main strong { color: var(--ink); font-size: 11px; }
+.location-status { display: inline-block; margin-left: 4px; padding: 2px 5px; border-radius: 5px; font-size: 7px !important; font-weight: 800; text-transform: uppercase; }
+.location-status.active { color: #14775d; background: #dcf5e9; }
+.location-status.inactive { color: #9a5a41; background: #fbe7dd; }
+.location-main span, .location-main small { color: var(--muted-ink); font-size: 9px; overflow-wrap: anywhere; }
+.admin-card-actions { display: flex; gap: 7px; margin-top: 11px; }
+.admin-card-actions button { min-height: 32px; flex: 1; font-size: 9px; }
+.admin-edit-grid { margin: 0; }
+.empty-admin { display: grid; place-items: center; gap: 7px; padding: 25px; color: #89a0a0; border: 1px dashed #c8dcd8; border-radius: 15px; text-align: center; }
+.empty-admin p { margin: 0; font-size: 10px; }
 
 .call-screen { color: white; background: #081b27; }
 .call-topbar { height: 71px; display: flex; align-items: center; justify-content: space-between; padding: 16px 19px 10px; background: #081b27; }

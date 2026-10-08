@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertServiceLocation, InsertUser, serviceLocations, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -106,6 +106,34 @@ export async function deleteUserProfile(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
   await db.delete(users).where(eq(users.id, id));
+  return { success: true as const };
+}
+
+export async function listServiceLocations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(serviceLocations);
+}
+
+export async function createServiceLocation(input: Omit<InsertServiceLocation, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(serviceLocations).values(input);
+  return { id: Number(result[0].insertId), ...input };
+}
+
+export async function updateServiceLocation(id: number, input: Partial<Pick<InsertServiceLocation, "name" | "city" | "phone" | "email" | "status">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(serviceLocations).set(input).where(eq(serviceLocations.id, id));
+  const result = await db.select().from(serviceLocations).where(eq(serviceLocations.id, id)).limit(1);
+  return result[0];
+}
+
+export async function deleteServiceLocation(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(serviceLocations).where(eq(serviceLocations.id, id));
   return { success: true as const };
 }
 

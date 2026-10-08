@@ -50,7 +50,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { trpc } from "./lib/trpc";
 
-type Screen = "home" | "login" | "signup" | "account" | "call";
+type Screen = "home" | "login" | "signup" | "account" | "admin" | "call";
 type ToastTone = "success" | "info" | "error";
 
 type InstallPromptEvent = Event & {
@@ -63,6 +63,7 @@ type AppRole = "deaf_person" | "interpreter" | "establishment";
 type Profile = { name: string; phone: string; email: string; city: string; state: string; gender: Gender; appRole: AppRole };
 type IbgeState = { id: number; sigla: string; nome: string };
 type IbgeCity = { id: number; nome: string };
+type ServiceLocation = { id: number; name: string; city: string; phone: string; email: string; status: "active" | "inactive" };
 
 const recentCalls = [
   { place: "UBS Vila Madalena", detail: "Atendimento em Libras", time: "Hoje, 10:42", initials: "UB" },
@@ -73,6 +74,11 @@ function App() {
   const { user, logout } = useAuth();
   const profileUpdate = trpc.auth.profile.update.useMutation();
   const profileRemove = trpc.auth.profile.remove.useMutation();
+  const profileQuery = trpc.auth.profile.me.useQuery(undefined, { enabled: Boolean(user) });
+  const locationsQuery = trpc.admin.locations.list.useQuery(undefined, { enabled: user?.role === "admin" });
+  const locationCreate = trpc.admin.locations.create.useMutation({ onSuccess: () => locationsQuery.refetch() });
+  const locationUpdate = trpc.admin.locations.update.useMutation({ onSuccess: () => locationsQuery.refetch() });
+  const locationRemove = trpc.admin.locations.remove.useMutation({ onSuccess: () => locationsQuery.refetch() });
   const [screen, setScreen] = useState<Screen>("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accountName, setAccountName] = useState("Camila");
@@ -89,6 +95,7 @@ function App() {
   const [toast, setToast] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", state: "", gender: "" as Gender | "", appRole: "deaf_person" as AppRole, identity: "", password: "" });
+  const [locationForm, setLocationForm] = useState({ name: "", city: "", phone: "", email: "" });
 
   useEffect(() => {
     if (user?.name) {
@@ -99,21 +106,31 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
-      .then((response) => response.json())
+    const savedProfile = profileQuery.data;
+    if (!savedProfile) return;
+    setProfile((current) => ({ ...current, name: savedProfile.name ?? current.name, email: savedProfile.email ?? current.email, phone: savedProfile.phone ?? current.phone, city: savedProfile.city ?? current.city, state: savedProfile.state ?? current.state, gender: savedProfile.gender ?? current.gender, appRole: savedProfile.appRole ?? current.appRole }));
+  }, [profileQuery.data]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome", { signal: controller.signal })
+      .then((response) => { if (!response.ok) throw new Error("IBGE states request failed"); return response.json(); })
       .then((data: IbgeState[]) => setStates(data))
-      .catch(() => showToast("Não foi possível carregar os estados do IBGE.", "error"));
+      .catch((error) => { if (error.name !== "AbortError") showToast("Não foi possível carregar os estados do IBGE.", "error"); });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     const uf = screen === "account" ? profile.state : form.state;
     if (!uf) { setCities([]); return; }
+    const controller = new AbortController();
     setCitiesLoading(true);
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
-      .then((response) => response.json())
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`, { signal: controller.signal })
+      .then((response) => { if (!response.ok) throw new Error("IBGE cities request failed"); return response.json(); })
       .then((data: IbgeCity[]) => setCities(data))
-      .catch(() => showToast("Não foi possível carregar as cidades do IBGE.", "error"))
-      .finally(() => setCitiesLoading(false));
+      .catch((error) => { if (error.name !== "AbortError") showToast("Não foi possível carregar as cidades do IBGE.", "error"); })
+      .finally(() => { if (!controller.signal.aborted) setCitiesLoading(false); });
+    return () => controller.abort();
   }, [screen, form.state, profile.state]);
 
   useEffect(() => {
@@ -196,18 +213,33 @@ function App() {
         onSuccess: () => showToast("Perfil salvo no banco de dados.", "success"),
         onError: () => showToast("Não foi possível salvar no servidor. Tente novamente.", "error"),
       });
+      return;
     }
     showToast("Perfil atualizado com sucesso.", "success");
   };
 
   const handleDeleteAccount = () => {
     if (!window.confirm("Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.")) return;
-    if (user) profileRemove.mutate(undefined, { onError: () => showToast("Não foi possível excluir a conta no servidor.", "error") });
-    setIsLoggedIn(false);
-    setProfile({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
-    setAccountName("Camila");
-    setScreen("home");
-    showToast("Sua conta foi excluída.", "info");
+    const finish = () => {
+      setIsLoggedIn(false);
+      setProfile({ name: "Camila", phone: "", email: "", city: "", state: "", gender: "prefer_not_to_say", appRole: "deaf_person" });
+      setAccountName("Camila");
+      setScreen("home");
+      showToast("Sua conta foi excluída.", "info");
+    };
+    if (user) {
+      profileRemove.mutate(undefined, { onSuccess: finish, onError: () => showToast("Não foi possível excluir a conta no servidor.", "error") });
+      return;
+    }
+    finish();
+  };
+
+  const handleCreateLocation = () => {
+    if (!locationForm.name.trim() || !locationForm.city.trim() || !locationForm.phone.trim() || !locationForm.email.trim()) {
+      showToast("Preencha nome, cidade, telefone e email do local.", "error");
+      return;
+    }
+    locationCreate.mutate(locationForm, { onSuccess: () => { setLocationForm({ name: "", city: "", phone: "", email: "" }); showToast("Local de atendimento cadastrado.", "success"); }, onError: () => showToast("Não foi possível cadastrar o local.", "error") });
   };
 
   const handleCreateCall = () => {
@@ -318,7 +350,8 @@ function App() {
                   onSwitch={() => setScreen("login")}
                 />
               )}
-              {screen === "account" && <AccountScreen profile={profile} states={states} cities={cities} citiesLoading={citiesLoading} onChange={(field, value) => setProfile((current) => ({ ...current, [field]: value, ...(field === "state" ? { city: "" } : {}) }))} onSave={handleProfileSave} onDelete={handleDeleteAccount} onLogout={handleLogout} onBack={() => setScreen("home")} />}
+              {screen === "account" && <AccountScreen profile={profile} states={states} cities={cities} citiesLoading={citiesLoading} isAdmin={user?.role === "admin"} onAdmin={() => setScreen("admin")} onChange={(field, value) => setProfile((current) => ({ ...current, [field]: value, ...(field === "state" ? { city: "" } : {}) }))} onSave={handleProfileSave} onDelete={handleDeleteAccount} onLogout={handleLogout} onBack={() => setScreen("home")} />}
+              {screen === "admin" && <AdminScreen locations={(locationsQuery.data ?? []) as ServiceLocation[]} form={locationForm} loading={locationsQuery.isLoading || locationCreate.isPending} onFormChange={(field, value) => setLocationForm((current) => ({ ...current, [field]: value }))} onCreate={handleCreateLocation} onUpdate={(location) => locationUpdate.mutate(location, { onSuccess: () => showToast("Local atualizado.", "success"), onError: () => showToast("Não foi possível atualizar o local.", "error") })} onRemove={(id) => { if (window.confirm("Excluir este local de atendimento?")) locationRemove.mutate({ id }, { onSuccess: () => showToast("Local excluído.", "info"), onError: () => showToast("Não foi possível excluir o local.", "error") }); }} onBack={() => setScreen("account")} />}
               {screen === "call" && (
                 <CallScreen
                   roomCode={roomCode}
@@ -498,6 +531,8 @@ type AccountScreenProps = {
   states: IbgeState[];
   cities: IbgeCity[];
   citiesLoading: boolean;
+  isAdmin: boolean;
+  onAdmin: () => void;
   onChange: (field: keyof Profile, value: string) => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
   onDelete: () => void;
@@ -505,7 +540,7 @@ type AccountScreenProps = {
   onBack: () => void;
 };
 
-function AccountScreen({ profile, states, cities, citiesLoading, onChange, onSave, onDelete, onLogout, onBack }: AccountScreenProps) {
+function AccountScreen({ profile, states, cities, citiesLoading, isAdmin, onAdmin, onChange, onSave, onDelete, onLogout, onBack }: AccountScreenProps) {
   return <div className="screen-stack auth-screen">
     <header className="topbar auth-topbar"><button className="back-button" onClick={onBack} aria-label="Voltar"><ArrowLeft size={20} /></button><span className="auth-step">MINHA CONTA</span><button className="icon-button muted-icon" aria-label="Ajuda"><CircleHelp size={19} /></button></header>
     <main className="content auth-content">
@@ -522,7 +557,35 @@ function AccountScreen({ profile, states, cities, citiesLoading, onChange, onSav
         <button className="primary-button submit-button" type="submit"><Save size={17} /> Salvar alterações</button>
       </form>
       <div className="account-management"><button className="outline-button" onClick={onLogout}><LogOut size={15} /> Sair da conta</button><button className="delete-button" onClick={onDelete}><Trash2 size={15} /> Excluir conta</button></div>
+      {isAdmin && <button className="admin-link-button" onClick={onAdmin}><Building2 size={15} /> Painel de administração</button>}
       <p className="prototype-note"><MapPin size={13} /> Estados e cidades carregados pela API oficial do IBGE.</p>
+    </main>
+  </div>;
+}
+
+type AdminScreenProps = {
+  locations: ServiceLocation[];
+  form: { name: string; city: string; phone: string; email: string };
+  loading: boolean;
+  onFormChange: (field: "name" | "city" | "phone" | "email", value: string) => void;
+  onCreate: () => void;
+  onUpdate: (location: ServiceLocation) => void;
+  onRemove: (id: number) => void;
+  onBack: () => void;
+};
+
+function AdminScreen({ locations, form, loading, onFormChange, onCreate, onUpdate, onRemove, onBack }: AdminScreenProps) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<ServiceLocation | null>(null);
+  return <div className="screen-stack auth-screen">
+    <header className="topbar auth-topbar"><button className="back-button" onClick={onBack} aria-label="Voltar"><ArrowLeft size={20} /></button><span className="auth-step">ADMINISTRAÇÃO</span><span className="admin-badge">ADMIN</span></header>
+    <main className="content auth-content admin-content">
+      <div className="auth-brand"><span className="brand-mark large-mark"><Building2 size={25} /></span><span className="section-kicker">LOCAIS DE ATENDIMENTO</span></div>
+      <div className="auth-heading"><span className="eyebrow"><span className="live-dot" /> GESTÃO DO SERVIÇO</span><h1>Onde o atendimento<br /><em>acontece.</em></h1><p>Cadastre os locais públicos e privados que poderão receber chamadas.</p></div>
+      <section className="admin-form-card"><span className="section-kicker">NOVO LOCAL</span><div className="admin-form-grid"><input value={form.name} onChange={(event) => onFormChange("name", event.target.value)} placeholder="Nome do local" /><input value={form.city} onChange={(event) => onFormChange("city", event.target.value)} placeholder="Cidade" /><input value={form.phone} onChange={(event) => onFormChange("phone", event.target.value)} placeholder="Telefone" /><input value={form.email} onChange={(event) => onFormChange("email", event.target.value)} placeholder="Email" type="email" /></div><button className="primary-button submit-button" onClick={onCreate} disabled={loading}><Plus size={17} /> {loading ? "Salvando..." : "Adicionar local"}</button></section>
+      <div className="section-heading admin-list-heading"><div><span className="section-kicker">CADASTRADOS</span><h2>{locations.length} {locations.length === 1 ? "local" : "locais"}</h2></div></div>
+      <section className="admin-location-list">{locations.length === 0 && <div className="empty-admin"><Building2 size={22} /><p>Nenhum local cadastrado ainda.</p></div>}{locations.map((location) => { const item = editingId === location.id && editing ? editing : location; return <article className="admin-location-card" key={location.id}>{editingId === location.id ? <div className="admin-edit-grid"><input value={item.name} onChange={(event) => setEditing({ ...item, name: event.target.value })} /><input value={item.city} onChange={(event) => setEditing({ ...item, city: event.target.value })} /><input value={item.phone} onChange={(event) => setEditing({ ...item, phone: event.target.value })} /><input value={item.email} onChange={(event) => setEditing({ ...item, email: event.target.value })} type="email" /><div className="admin-card-actions"><button className="primary-button compact-button" onClick={() => { onUpdate(item); setEditingId(null); setEditing(null); }}><Save size={14} /> Salvar</button><button className="outline-button" onClick={() => { setEditingId(null); setEditing(null); }}>Cancelar</button></div></div> : <><div className="location-main"><span className="location-icon"><Building2 size={18} /></span><div><strong>{location.name} <small className={`location-status ${location.status}`}>{location.status === "active" ? "ativo" : "inativo"}</small></strong><span>{location.city} · {location.phone}</span><small>{location.email}</small></div></div><div className="admin-card-actions"><button className="outline-button" onClick={() => onUpdate({ ...location, status: location.status === "active" ? "inactive" : "active" })}>{location.status === "active" ? "Desativar" : "Ativar"}</button><button className="outline-button" onClick={() => { setEditingId(location.id); setEditing(location); }}>Editar</button><button className="delete-button" onClick={() => onRemove(location.id)}><Trash2 size={14} /> Excluir</button></div></>}</article>; })}</section>
+      <p className="prototype-note"><ShieldCheck size={13} /> Somente administradores autenticados podem gerenciar locais.</p>
     </main>
   </div>;
 }

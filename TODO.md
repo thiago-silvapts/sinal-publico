@@ -13,7 +13,9 @@
 - [x] **Gerenciamento da conta** — Usuário autenticado pode abrir Minha conta, alterar nome, telefone, email, estado e cidade, salvar alterações, sair e solicitar exclusão da conta com confirmação.
 - [x] **Gênero e perfil de uso no cadastro** — A criação de conta agora solicita gênero e permite indicar pessoa surda, intérprete de Libras ou estabelecimento; CPF e CNPJ não fazem parte do fluxo.
 - [x] **Persistência real do perfil** — A tabela `users` recebeu telefone, cidade, estado, gênero e perfil de uso; foram criadas rotas protegidas para consultar, atualizar e excluir o perfil, com migração aplicada pelo Drizzle.
-- [ ] **Atendimentos reais** — Criar entidades e telas de estabelecimentos, salas, fila de intérpretes, videochamada WebRTC e histórico persistente.
+- [x] **Correções da base do perfil e IBGE** — O perfil persistido é hidratado ao iniciar a sessão, o salvamento/exclusão aguardam resposta do servidor, e as requisições de estados/cidades do IBGE validam HTTP e podem ser canceladas.
+- [x] **Painel administrativo de locais** — Administradores autenticados podem cadastrar, listar, editar, ativar/desativar e excluir locais de atendimento com nome, cidade, telefone e email; CPF e CNPJ não são solicitados.
+- [ ] **Atendimentos reais** — Criar entidades e telas de salas, fila de intérpretes, videochamada WebRTC e histórico persistente.
 - [ ] **Acessibilidade e segurança de produção** — Concluir permissões de mídia, consentimentos, termos, política de privacidade, recuperação de conta, alto contraste, teclado, leitor de tela e publicação final.
 
 ## Validação
