@@ -9,7 +9,9 @@
 - [x] **PWA instalável** — Entregue com manifesto, ícone, service worker básico, botão de instalação quando suportado e configuração `application_owned` salva no projeto.
 - [x] **Base preparada para autenticação real** — O starter Manus OAuth, banco e servidor foram preservados, sem credenciais próprias inventadas no frontend; os formulários de email/senha são o fluxo demonstrativo solicitado.
 - [x] **Acesso aos serviços protegido por conta** — A tela inicial permanece pública e com aparência de celular, mas criar chamada, entrar com código e acessar chamadas exigem login ou criação de conta; visitantes recebem uma chamada clara para entrar ou criar conta.
+- [x] **Perfil completo com localização IBGE** — O cadastro agora solicita nome, telefone, email, estado e cidade carregados da API oficial do IBGE, além de senha numérica com exatamente 8 dígitos.
+- [x] **Gerenciamento da conta** — Usuário autenticado pode abrir Minha conta, alterar nome, telefone, email, estado e cidade, salvar alterações, sair e solicitar exclusão da conta com confirmação.
 
 ## Validação
 
-`pnpm check`, `pnpm build` e `pnpm test` foram executados com sucesso. O preview respondeu em `http://127.0.0.1:3000`, e `/manifest.webmanifest`, `/sw.js` e `/manus-routes.json` retornaram HTTP 200.
+`pnpm check`, `pnpm build` e `pnpm test` foram executados com sucesso. O preview respondeu em `http://127.0.0.1:3000`, e `/manifest.webmanifest`, `/sw.js` e `/manus-routes.json` retornaram HTTP 200. A API do IBGE respondeu com os 27 estados brasileiros.

@@ -159,7 +159,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .segmented-control button.selected { color: var(--teal-dark); background: white; box-shadow: 0 3px 9px rgba(15,118,110,.08); }
 .auth-form { display: flex; flex-direction: column; gap: 13px; }
 .auth-form label { display: flex; flex-direction: column; gap: 7px; color: var(--ink); font-size: 10px; font-weight: 750; }
-.auth-form input { height: 46px; background: rgba(255,255,255,.85); }
+.auth-form input, .auth-form select { height: 46px; background: rgba(255,255,255,.85); }
+.auth-form select { width: 100%; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); font-size: 12px; outline: none; }
 .password-field { position: relative; }
 .password-field input { padding-right: 42px; }
 .password-field button { position: absolute; right: 12px; top: 50%; display: grid; place-items: center; padding: 0; color: #8aa0a0; background: transparent; transform: translateY(-50%); }
@@ -168,6 +169,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(15, 118, 110
 .auth-switch { margin: 20px 0 0; color: var(--muted-ink); text-align: center; font-size: 11px; }
 .auth-switch button { padding: 0; color: var(--teal); background: transparent; font-weight: 800; }
 .prototype-note { display: flex; justify-content: center; align-items: center; gap: 5px; margin: 24px auto 0; color: #95a8a8; font-size: 9px; text-align: center; }
+.account-management { display: flex; gap: 9px; margin-top: 18px; }
+.account-management > button { flex: 1; }
+.delete-button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; color: #a94f4a; background: #fff; border: 1px solid #edc5c1; border-radius: 10px; font-size: 10px; font-weight: 750; }
 
 .call-screen { color: white; background: #081b27; }
 .call-topbar { height: 71px; display: flex; align-items: center; justify-content: space-between; padding: 16px 19px 10px; background: #081b27; }

@@ -23,6 +23,7 @@ import {
   LockKeyhole,
   LogIn,
   LogOut,
+  MapPin,
   MessageCircle,
   Mic,
   MicOff,
@@ -30,11 +31,13 @@ import {
   Phone,
   PhoneOff,
   Plus,
+  Save,
   ShieldCheck,
   Smartphone,
   Sparkles,
   UserPlus,
   UserRound,
+  Trash2,
   UsersRound,
   Video,
   Wifi,
@@ -46,13 +49,17 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
-type Screen = "home" | "login" | "signup" | "call";
+type Screen = "home" | "login" | "signup" | "account" | "call";
 type ToastTone = "success" | "info" | "error";
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
+
+type Profile = { name: string; phone: string; email: string; city: string; state: string };
+type IbgeState = { id: number; sigla: string; nome: string };
+type IbgeCity = { id: number; nome: string };
 
 const recentCalls = [
   { place: "UBS Vila Madalena", detail: "Atendimento em Libras", time: "Hoje, 10:42", initials: "UB" },
@@ -64,6 +71,10 @@ function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [accountName, setAccountName] = useState("Camila");
+  const [profile, setProfile] = useState<Profile>({ name: "Camila", phone: "", email: "", city: "", state: "" });
+  const [states, setStates] = useState<IbgeState[]>([]);
+  const [cities, setCities] = useState<IbgeCity[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
   const [authMode, setAuthMode] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [isMicOn, setIsMicOn] = useState(true);
@@ -72,14 +83,33 @@ function App() {
   const [roomCode, setRoomCode] = useState("SP-4821");
   const [toast, setToast] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", identity: "", password: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
 
   useEffect(() => {
     if (user?.name) {
       setAccountName(user.name.split(" ")[0]);
       setIsLoggedIn(true);
+      setProfile((current) => ({ ...current, name: user.name ?? current.name, email: user.email ?? current.email }));
     }
   }, [user]);
+
+  useEffect(() => {
+    fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
+      .then((response) => response.json())
+      .then((data: IbgeState[]) => setStates(data))
+      .catch(() => showToast("Não foi possível carregar os estados do IBGE.", "error"));
+  }, []);
+
+  useEffect(() => {
+    const uf = screen === "account" ? profile.state : form.state;
+    if (!uf) { setCities([]); return; }
+    setCitiesLoading(true);
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
+      .then((response) => response.json())
+      .then((data: IbgeCity[]) => setCities(data))
+      .catch(() => showToast("Não foi possível carregar as cidades do IBGE.", "error"))
+      .finally(() => setCitiesLoading(false));
+  }, [screen, form.state, profile.state]);
 
   useEffect(() => {
     const handleBeforeInstall = (event: Event) => {
@@ -105,11 +135,12 @@ function App() {
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.identity.trim() || !form.password.trim()) {
-      showToast("Preencha seu email ou telefone e a senha para continuar.", "error");
+    if (!form.identity.trim() || !/^\d{8}$/.test(form.password)) {
+      showToast("Informe seu email ou telefone e uma senha com exatamente 8 dígitos.", "error");
       return;
     }
     setAccountName(form.identity.includes("@") ? "Camila" : "Camila");
+    setProfile((current) => ({ ...current, email: form.identity.includes("@") ? form.identity : current.email, phone: form.identity.includes("@") ? current.phone : form.identity }));
     setIsLoggedIn(true);
     setScreen("home");
     showToast("Conta conectada. Que bom ter você por aqui!", "success");
@@ -117,11 +148,12 @@ function App() {
 
   const handleSignup = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || form.password.length < 6) {
-      showToast("Confira seus dados. A senha precisa ter pelo menos 6 caracteres.", "error");
+    if (!form.name.trim() || !form.phone.trim() || !form.email.trim() || !form.city || !form.state || !/^\d{8}$/.test(form.password)) {
+      showToast("Preencha nome, telefone, email, cidade, estado e uma senha com exatamente 8 dígitos.", "error");
       return;
     }
     setAccountName(form.name.trim().split(" ")[0]);
+    setProfile({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), city: form.city, state: form.state });
     setIsLoggedIn(true);
     setScreen("home");
     showToast("Conta criada com sucesso. Seu atendimento está mais perto.", "success");
@@ -144,6 +176,26 @@ function App() {
     setIsLoggedIn(false);
     setScreen("home");
     showToast("Você saiu da conta.", "info");
+  };
+
+  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!profile.name.trim() || !profile.phone.trim() || !profile.email.trim() || !profile.city || !profile.state) {
+      showToast("Preencha todos os dados do perfil para salvar.", "error");
+      return;
+    }
+    setAccountName(profile.name.trim().split(" ")[0]);
+    setProfile((current) => ({ ...current, name: current.name.trim(), phone: current.phone.trim(), email: current.email.trim() }));
+    showToast("Perfil atualizado com sucesso.", "success");
+  };
+
+  const handleDeleteAccount = () => {
+    if (!window.confirm("Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.")) return;
+    setIsLoggedIn(false);
+    setProfile({ name: "Camila", phone: "", email: "", city: "", state: "" });
+    setAccountName("Camila");
+    setScreen("home");
+    showToast("Sua conta foi excluída.", "info");
   };
 
   const handleCreateCall = () => {
@@ -187,12 +239,12 @@ function App() {
 
   const openLogin = () => {
     setAuthMode("email");
-    setForm({ name: "", phone: "", email: "", identity: "", password: "" });
+    setForm({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
     setScreen("login");
   };
 
   const openSignup = () => {
-    setForm({ name: "", phone: "", email: "", identity: "", password: "" });
+    setForm({ name: "", phone: "", email: "", city: "", state: "", identity: "", password: "" });
     setScreen("signup");
   };
 
@@ -215,7 +267,7 @@ function App() {
                   onLogin={openLogin}
                   onSignup={openSignup}
                   onInstall={handleInstall}
-                  onOpenAccount={() => (isLoggedIn ? showToast("Sua conta está ativa neste dispositivo.", "info") : openLogin())}
+                  onOpenAccount={() => (isLoggedIn ? setScreen("account") : openLogin())}
                 />
               )}
               {screen === "login" && (
@@ -224,6 +276,9 @@ function App() {
                   authMode={authMode}
                   showPassword={showPassword}
                   form={form}
+                  states={states}
+                  cities={cities}
+                  citiesLoading={citiesLoading}
                   onBack={() => setScreen("home")}
                   onSubmit={handleLogin}
                   onModeChange={setAuthMode}
@@ -239,6 +294,9 @@ function App() {
                   authMode={authMode}
                   showPassword={showPassword}
                   form={form}
+                  states={states}
+                  cities={cities}
+                  citiesLoading={citiesLoading}
                   onBack={() => setScreen("home")}
                   onSubmit={handleSignup}
                   onModeChange={setAuthMode}
@@ -248,6 +306,7 @@ function App() {
                   onSwitch={() => setScreen("login")}
                 />
               )}
+              {screen === "account" && <AccountScreen profile={profile} states={states} cities={cities} citiesLoading={citiesLoading} onChange={(field, value) => setProfile((current) => ({ ...current, [field]: value, ...(field === "state" ? { city: "" } : {}) }))} onSave={handleProfileSave} onDelete={handleDeleteAccount} onLogout={handleLogout} onBack={() => setScreen("home")} />}
               {screen === "call" && (
                 <CallScreen
                   roomCode={roomCode}
@@ -378,17 +437,20 @@ type AuthScreenProps = {
   mode: "login" | "signup";
   authMode: "email" | "phone";
   showPassword: boolean;
-  form: { name: string; phone: string; email: string; identity: string; password: string };
+  form: { name: string; phone: string; email: string; city: string; state: string; identity: string; password: string };
+  states: IbgeState[];
+  cities: IbgeCity[];
+  citiesLoading: boolean;
   onBack: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onModeChange: (mode: "email" | "phone") => void;
   onTogglePassword: () => void;
-  onChange: (field: "name" | "phone" | "email" | "identity" | "password", value: string) => void;
+  onChange: (field: "name" | "phone" | "email" | "city" | "state" | "identity" | "password", value: string) => void;
   onManusLogin: () => void;
   onSwitch: () => void;
 };
 
-function AuthScreen({ mode, authMode, showPassword, form, onBack, onSubmit, onModeChange, onTogglePassword, onChange, onManusLogin, onSwitch }: AuthScreenProps) {
+function AuthScreen({ mode, authMode, showPassword, form, states, cities, citiesLoading, onBack, onSubmit, onModeChange, onTogglePassword, onChange, onManusLogin, onSwitch }: AuthScreenProps) {
   const isSignup = mode === "signup";
   return (
     <div className="screen-stack auth-screen">
@@ -403,8 +465,10 @@ function AuthScreen({ mode, authMode, showPassword, form, onBack, onSubmit, onMo
           {isSignup && <label>Nome completo<input value={form.name} onChange={(event) => onChange("name", event.target.value)} placeholder="Como podemos chamar você?" autoComplete="name" /></label>}
           {isSignup && <label>Telefone<input value={form.phone} onChange={(event) => onChange("phone", event.target.value)} placeholder="(11) 99999-0000" autoComplete="tel" /></label>}
           {isSignup && <label>Email<input value={form.email} onChange={(event) => onChange("email", event.target.value)} placeholder="voce@email.com" type="email" autoComplete="email" /></label>}
+          {isSignup && <label>Estado<select value={form.state} onChange={(event) => onChange("state", event.target.value)}><option value="">Selecione seu estado</option>{states.map((state) => <option key={state.id} value={state.sigla}>{state.nome} ({state.sigla})</option>)}</select></label>}
+          {isSignup && <label>Cidade<select value={form.city} onChange={(event) => onChange("city", event.target.value)} disabled={!form.state || citiesLoading}><option value="">{citiesLoading ? "Carregando cidades..." : "Selecione sua cidade"}</option>{cities.map((city) => <option key={city.id} value={city.nome}>{city.nome}</option>)}</select></label>}
           {!isSignup && <label>{authMode === "email" ? "Email" : "Telefone"}<input value={form.identity} onChange={(event) => onChange("identity", event.target.value)} placeholder={authMode === "email" ? "voce@email.com" : "(11) 99999-0000"} type={authMode === "email" ? "email" : "tel"} autoComplete={authMode === "email" ? "email" : "tel"} /></label>}
-          <label>Senha<div className="password-field"><input value={form.password} onChange={(event) => onChange("password", event.target.value)} placeholder="Mínimo de 6 caracteres" type={showPassword ? "text" : "password"} autoComplete={isSignup ? "new-password" : "current-password"} /><button type="button" onClick={onTogglePassword} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></label>
+          <label>Senha de 8 dígitos<div className="password-field"><input value={form.password} onChange={(event) => onChange("password", event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="Digite 8 números" inputMode="numeric" pattern="[0-9]{8}" maxLength={8} type={showPassword ? "text" : "password"} autoComplete={isSignup ? "new-password" : "current-password"} /><button type="button" onClick={onTogglePassword} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></label>
           {isSignup && <label className="consent-row"><span className="fake-checkbox"><Check size={12} /></span><span>Concordo com os termos de uso e a política de privacidade.</span></label>}
           <button className="primary-button submit-button" type="submit">{isSignup ? "Criar minha conta" : "Entrar na conta"} <ArrowRight size={17} /></button>
         </form>
@@ -413,6 +477,38 @@ function AuthScreen({ mode, authMode, showPassword, form, onBack, onSubmit, onMo
       </main>
     </div>
   );
+}
+
+type AccountScreenProps = {
+  profile: Profile;
+  states: IbgeState[];
+  cities: IbgeCity[];
+  citiesLoading: boolean;
+  onChange: (field: keyof Profile, value: string) => void;
+  onSave: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: () => void;
+  onLogout: () => void;
+  onBack: () => void;
+};
+
+function AccountScreen({ profile, states, cities, citiesLoading, onChange, onSave, onDelete, onLogout, onBack }: AccountScreenProps) {
+  return <div className="screen-stack auth-screen">
+    <header className="topbar auth-topbar"><button className="back-button" onClick={onBack} aria-label="Voltar"><ArrowLeft size={20} /></button><span className="auth-step">MINHA CONTA</span><button className="icon-button muted-icon" aria-label="Ajuda"><CircleHelp size={19} /></button></header>
+    <main className="content auth-content">
+      <div className="auth-brand"><span className="brand-mark large-mark"><UserRound size={25} /></span><span className="section-kicker">PERFIL DO USUÁRIO</span></div>
+      <div className="auth-heading"><span className="eyebrow"><span className="live-dot" /> DADOS DA CONTA</span><h1>Seu perfil,<br /><em>do seu jeito.</em></h1><p>Altere seus dados de contato e localização quando precisar.</p></div>
+      <form className="auth-form" onSubmit={onSave}>
+        <label>Nome completo<input value={profile.name} onChange={(event) => onChange("name", event.target.value)} autoComplete="name" /></label>
+        <label>Telefone<input value={profile.phone} onChange={(event) => onChange("phone", event.target.value)} autoComplete="tel" /></label>
+        <label>Email<input value={profile.email} onChange={(event) => onChange("email", event.target.value)} type="email" autoComplete="email" /></label>
+        <label>Estado<select value={profile.state} onChange={(event) => onChange("state", event.target.value)}><option value="">Selecione seu estado</option>{states.map((state) => <option key={state.id} value={state.sigla}>{state.nome} ({state.sigla})</option>)}</select></label>
+        <label>Cidade<select value={profile.city} onChange={(event) => onChange("city", event.target.value)} disabled={!profile.state || citiesLoading}><option value="">{citiesLoading ? "Carregando cidades..." : "Selecione sua cidade"}</option>{cities.map((city) => <option key={city.id} value={city.nome}>{city.nome}</option>)}</select></label>
+        <button className="primary-button submit-button" type="submit"><Save size={17} /> Salvar alterações</button>
+      </form>
+      <div className="account-management"><button className="outline-button" onClick={onLogout}><LogOut size={15} /> Sair da conta</button><button className="delete-button" onClick={onDelete}><Trash2 size={15} /> Excluir conta</button></div>
+      <p className="prototype-note"><MapPin size={13} /> Estados e cidades carregados pela API oficial do IBGE.</p>
+    </main>
+  </div>;
 }
 
 type CallScreenProps = { roomCode: string; isMicOn: boolean; isCameraOn: boolean; onToggleMic: () => void; onToggleCamera: () => void; onEnd: () => void; onBack: () => void };
